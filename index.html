@@ -12,14 +12,20 @@
             font-family: 'Inter', sans-serif;
         }
 
+        /* [핵심 수정] 외부 스크롤바 숨기기 */
+        body {
+            /* 뷰포트 크기를 초과하는 내용이 있어도 스크롤바를 생성하지 않음 */
+            overflow: hidden; 
+        }
+        
         /* contenteditable div를 textarea처럼 보이게 스타일링 */
         #output-text {
             /* iOS 줌 방지 핵심 (16px 이상) */
             font-size: 1rem; /* 16px */
             
-            /* 스크롤바 추가를 위해 max-height와 overflow-y 설정 (2줄 더 길게) */
-            max-height: 470px; 
-            overflow-y: auto; /* 내용이 넘칠 때 스크롤바 표시 */
+            /* [수정] max-height를 약 10줄 높이(280px)로 조정 */
+            max-height: 280px; 
+            overflow-y: auto; /* 내용이 넘칠 때 스크롤바 표시 (내부 스크롤) */
             
             min-height: 200px;
             white-space: pre-wrap; /* 줄 바꿈 유지 */
@@ -160,7 +166,7 @@
 
         <!-- 4. 버전 표시 영역 -->
         <div class="text-right pt-2">
-            <span class="text-xs text-gray-400">v1.1.7 (iPadOS Copy Fix)</span>
+            <span class="text-xs text-gray-400">v1.1.9 (Height constrained)</span>
         </div>
 
     </div>
