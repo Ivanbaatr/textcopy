@@ -23,11 +23,11 @@
         <!-- 고정된 규칙 안내 -->
         <div class="p-3 bg-red-50 border-l-4 border-red-500 rounded-lg shadow-sm">
             <p class="text-sm font-semibold text-red-700">
-                자동 제거 규칙:
+                자동 제거 및 치환 규칙:
             </p>
             <ul class="text-sm text-gray-700 list-disc list-inside ml-2 mt-1">
-                <li>연속된 **'+'** 문자</li>
-                <li>**'신세계역 성경 (연구용)'** 문구 전체</li>
+                <li>**연속된 '+'** 문자 제거</li>
+                <li>**'신세계역 성경 (연구용)'** 문구를 **')'** 하나로 치환 (주변의 줄 바꿈/공백만 정리)</li>
             </ul>
         </div>
         
@@ -66,35 +66,32 @@
         const copyButton = document.getElementById('copy-button');
         const messageSpan = document.getElementById('message');
         
-        // 고정된 제거 규칙 목록
-        // 이제 사용자의 입력 없이 이 배열의 값만 제거됩니다.
-        const removalPhrases = ["신세계역 성경 (연구용)"];
         const apiKey = "" // API 키를 여기에 넣을 수 있습니다. 현재는 사용하지 않습니다.
 
 
         /**
-         * 텍스트에서 고정된 규칙(연속된 '+' 및 지정 단어열)을 적용하여 정리합니다.
+         * 텍스트에서 고정된 규칙을 적용하여 정리합니다.
          */
         function cleanText() {
             let cleanedText = inputTextarea.value;
             
-            // 1. 연속된 '+' 문자를 제거합니다. (기본 규칙)
-            // 정규 표현식 /\++/g: 하나 이상의 연속된 '+' 문자를 전역적으로 찾아서 제거
+            // 1. 연속된 '+' 문자를 제거합니다.
             cleanedText = cleanedText.replace(/\++/g, '');
-
-            // 2. 고정된 단어열/문구를 제거합니다.
-            removalPhrases.forEach(phrase => {
-                // 단어열을 정규식으로 안전하게 처리 (특수문자 이스케이프)
-                const escapedPhrase = phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                
-                // 정확히 그 문구만 찾는 전역 정규식 생성 (g 플래그로 모두 제거)
-                const phraseRegex = new RegExp(escapedPhrase, 'g');
-                
-                // 해당 단어열들을 텍스트에서 제거합니다.
-                cleanedText = cleanedText.replace(phraseRegex, '');
-            });
             
-            outputTextarea.value = cleanedText;
+            // 2. '신세계역 성경 (연구용)' 문구를 찾아 ')' 하나로 치환하고 주변 공백을 제거합니다.
+            const phraseToTarget = "신세계역 성경 (연구용)";
+            
+            // 정규식 안전 처리를 위해 문구 이스케이프
+            const escapedPhrase = phraseToTarget.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            
+            // 문구 앞뒤의 공백/줄 바꿈 문자(\s, \r, \n)를 포함하여 찾습니다.
+            const phraseRegex = new RegExp(`[\\s\\r\\n]*${escapedPhrase}[\\s\\r\\n]*`, 'g');
+            
+            // 해당 문구와 주변 공백을 ')' 문자 하나로 치환합니다.
+            cleanedText = cleanedText.replace(phraseRegex, ')');
+            
+            // 3. 최종적으로 정리된 텍스트의 앞뒤 공백을 제거합니다.
+            outputTextarea.value = cleanedText.trim(); 
 
             // 출력 텍스트가 비어있으면 복사 버튼을 비활성화합니다.
             if (cleanedText.trim().length > 0) {
@@ -130,6 +127,13 @@
                     messageSpan.classList.remove('opacity-100');
                     messageSpan.classList.add('opacity-0');
                     messageSpan.textContent = '';
+                    
+                    // --- 추가된 기능: 입력 및 출력 영역 초기화 ---
+                    inputTextarea.value = '';
+                    outputTextarea.value = '';
+                    copyButton.disabled = true;
+                    // ----------------------------------------
+
                 }, 2000);
 
             } catch (err) {
