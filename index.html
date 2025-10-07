@@ -185,7 +185,7 @@
 
         <!-- 4. 버전 표시 영역 (새로 추가됨) -->
         <div class="text-right pt-2">
-            <span class="text-xs text-gray-400">v1.0.4 (iOS Copy Fix)</span>
+            <span class="text-xs text-gray-400">v1.0.5 (iOS Copy Rework)</span>
         </div>
 
     </div>
@@ -219,12 +219,16 @@
         ];
 
         // iOS 서식 유지를 위한 인라인 스타일 매핑 (copyToClipboard에서 사용)
+        // **중요**: H1, H2, H3 스타일은 <p> 태그에 적용되어야 iOS Notes에서 인식됩니다.
         const RICH_TEXT_STYLES = {
-            'H1': 'font-size: 1.875rem; font-weight: 800; line-height: 1.3; margin-top: 1.5rem; margin-bottom: 0.75rem; border-bottom: 2px solid #374151;',
-            'H2': 'font-size: 1.5rem; font-weight: 700; line-height: 1.4; margin-top: 1.25rem; margin-bottom: 0.5rem; border-left: 4px solid #4f46e5; padding-left: 0.5rem;',
-            'H3': 'font-size: 1.25rem; font-weight: 600; line-height: 1.5; margin-top: 1rem; margin-bottom: 0.25rem; color: #1f2937;',
+            // H1을 폰트 크기와 굵기로 변환 (P 태그용)
+            'H1': 'font-size: 1.5rem; font-weight: 800; line-height: 1.3; margin-top: 1.5rem; margin-bottom: 0.75rem; border-bottom: 2px solid #374151;',
+            // H2를 폰트 크기와 굵기로 변환 (P 태그용)
+            'H2': 'font-size: 1.25rem; font-weight: 700; line-height: 1.4; margin-top: 1.25rem; margin-bottom: 0.5rem; border-left: 4px solid #4f46e5; padding-left: 0.5rem;',
+            // H3를 폰트 크기와 굵기로 변환 (P 태그용)
+            'H3': 'font-size: 1.125rem; font-weight: 600; line-height: 1.5; margin-top: 1rem; margin-bottom: 0.25rem; color: #1f2937;',
+            // 인라인 스타일
             'STRONG': 'font-weight: bold;',
-            'B': 'font-weight: bold;',
             'U': 'text-decoration: underline;',
         };
 
@@ -431,7 +435,8 @@
         }
 
         /**
-         * @description iOS/iPadOS에서 서식이 유지된 Rich Text 복사를 위해 모든 서식을 인라인 스타일로 변환하여 클립보드에 복사합니다.
+         * @description iOS/iPadOS에서 서식이 유지된 Rich Text 복사를 위해 모든 서식을 인라인 스타일로 변환하고, 
+         * H 태그를 <p> 태그로 변환하여 클립보드에 복사합니다.
          */
         function copyToClipboard() {
             const contentDiv = editingTarget;
@@ -441,39 +446,43 @@
             }
             
             try {
-                // 1. 컨텐츠를 복제하고 임시 편집 가능 Div에 넣습니다. (iOS 복사 필수 조건)
-                const tempDiv = contentDiv.cloneNode(true);
-                tempDiv.style.position = 'absolute';
-                tempDiv.style.left = '-9999px';
-                tempDiv.style.width = '0';
-                tempDiv.style.height = '0';
-                tempDiv.style.overflow = 'hidden';
-                tempDiv.setAttribute('contenteditable', 'true'); 
-
-                // 2. 모든 자식 요소에 인라인 스타일을 강제 적용합니다. (iOS Rich Text 복사 핵심)
-                const elements = tempDiv.querySelectorAll('*');
-                elements.forEach(element => {
-                    let style = '';
-                    const tag = element.tagName;
-
-                    // 기본 폰트 패밀리 강제 적용
-                    if (!element.style.fontFamily) {
-                        element.style.fontFamily = 'Inter, sans-serif';
-                    }
-
-                    // H1/H2/H3/Bold/Underline에 대한 커스텀 스타일 적용
-                    if (RICH_TEXT_STYLES[tag]) {
-                        style += RICH_TEXT_STYLES[tag];
-                    }
-                    element.style.cssText += style;
+                // 1. 임시 Div 설정: 인라인 스타일 복사를 위해 contenteditable 속성을 부여합니다.
+                const tempDiv = document.createElement('div');
+                // 기본 폰트와 공백 유지 설정을 미리 적용합니다.
+                tempDiv.style.cssText = 'font-family: Inter, sans-serif; white-space: pre-wrap;'; 
+                tempDiv.setAttribute('contenteditable', 'true');
+                
+                // 2. HTML을 iOS 호환 구조로 변환합니다. (H 태그를 <p>로 변경)
+                let contentHTML = contentDiv.innerHTML;
+                
+                // H1/H2/H3 태그를 인라인 스타일이 적용된 <p> 태그로 변환
+                contentHTML = contentHTML.replace(/<h1[^>]*>(.*?)<\/h1>/gis, (match, content) => {
+                    return `<p style="${RICH_TEXT_STYLES['H1']}">${content}</p>`;
+                });
+                contentHTML = contentHTML.replace(/<h2[^>]*>(.*?)<\/h2>/gis, (match, content) => {
+                    return `<p style="${RICH_TEXT_STYLES['H2']}">${content}</p>`;
+                });
+                contentHTML = contentHTML.replace(/<h3[^>]*>(.*?)<\/h3>/gis, (match, content) => {
+                    return `<p style="${RICH_TEXT_STYLES['H3']}">${content}</p>`;
                 });
 
-                // 루트 Div에도 폰트 설정
-                tempDiv.style.fontFamily = 'Inter, sans-serif';
+                // STRONG과 U 태그를 인라인 스타일이 적용된 <span> 태그로 변환
+                contentHTML = contentHTML.replace(/<strong[^>]*>(.*?)<\/strong>/gis, `<span style="${RICH_TEXT_STYLES['STRONG']}">$1</span>`);
+                contentHTML = contentHTML.replace(/<b[^>]*>(.*?)<\/b>/gis, `<span style="${RICH_TEXT_STYLES['STRONG']}">$1</span>`);
+                contentHTML = contentHTML.replace(/<u[^>]*>(.*?)<\/u>/gis, `<span style="${RICH_TEXT_STYLES['U']}">$1</span>`);
 
+                // <br> 태그에 닫는 슬래시 추가
+                contentHTML = contentHTML.replace(/<br>/g, '<br />');
+
+                tempDiv.innerHTML = contentHTML;
+
+                // 3. 임시 Div를 화면 밖으로 이동 후 삽입합니다.
+                tempDiv.style.position = 'absolute';
+                tempDiv.style.left = '-9999px';
+                
                 document.body.appendChild(tempDiv);
                 
-                // 3. 프로그램적으로 선택 및 복사 실행
+                // 4. 프로그램적으로 선택 및 복사 실행
                 const range = document.createRange();
                 range.selectNodeContents(tempDiv);
                 const selection = window.getSelection();
@@ -482,12 +491,12 @@
 
                 document.execCommand('copy');
                 
-                // 4. 정리
+                // 5. 정리
                 selection.removeAllRanges();
                 document.body.removeChild(tempDiv);
                 
                 // 성공 메시지 표시
-                messageSpan.textContent = '복사 완료! (iOS/메모장 최적화)';
+                messageSpan.textContent = '복사 완료! (iOS 메모장 최적화 완료)';
                 messageSpan.classList.remove('opacity-0', 'text-red-600');
                 messageSpan.classList.add('opacity-100', 'text-green-600');
 
