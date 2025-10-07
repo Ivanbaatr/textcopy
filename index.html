@@ -37,6 +37,7 @@
         }
 
         /* 시각적 포맷팅을 위한 CSS */
+        /* NOTE: 이 CSS 스타일은 에디터 내부의 렌더링에만 사용됩니다. 복사 시에는 RICH_TEXT_STYLES가 사용됩니다. */
         #output-text u {
             text-decoration: underline;
         }
@@ -159,7 +160,7 @@
 
         <!-- 4. 버전 표시 영역 -->
         <div class="text-right pt-2">
-            <span class="text-xs text-gray-400">v1.1.6 (Placeholder fix)</span>
+            <span class="text-xs text-gray-400">v1.1.7 (iPadOS Copy Fix)</span>
         </div>
 
     </div>
@@ -191,10 +192,15 @@
         ];
 
         // iOS 서식 유지를 위한 인라인 스타일 매핑 (copyToClipboard에서 사용)
+        // **iPadOS 호환성 개선: 복잡한 border, line-height 제거 및 기본 폰트 크기/굵기/마진만 유지**
         const RICH_TEXT_STYLES = {
-            'H1': 'font-size: 1.5rem; font-weight: 800; line-height: 1.3; margin-top: 1.5rem; margin-bottom: 0.75rem; border-bottom: 2px solid #374151; display: block; border-left: none; padding-left: 0;',
-            'H2': 'font-size: 1.25rem; font-weight: 700; line-height: 1.4; margin-top: 1.25rem; margin-bottom: 0.5rem; border-left: 4px solid #4f46e5; padding-left: 0.5rem; display: block;',
-            'H3': 'font-size: 1.125rem; font-weight: 600; line-height: 1.5; margin-top: 1rem; margin-bottom: 0.25rem; color: #1f2937; display: block; border-left: none; padding-left: 0;',
+            // H1 (Title): 에디터 CSS와 동일한 폰트 크기 사용
+            'H1': 'font-size: 1.875rem; font-weight: 800; margin: 1.5rem 0 0.75rem 0; display: block;',
+            // H2 (Heading): 에디터 CSS와 동일한 폰트 크기 사용
+            'H2': 'font-size: 1.5rem; font-weight: 700; margin: 1.25rem 0 0.5rem 0; display: block; padding-left: 0.5rem;',
+            // H3 (Subheading): 에디터 CSS와 동일한 폰트 크기 사용
+            'H3': 'font-size: 1.25rem; font-weight: 600; margin: 1rem 0 0.25rem 0; display: block;',
+            // Inline Styles
             'STRONG': 'font-weight: bold;',
             'U': 'text-decoration: underline;',
         };
@@ -335,8 +341,6 @@
             editingTarget.setAttribute('data-placeholder-active', isActive ? 'true' : 'false');
             
             if (isActive && currentRawText.trim() !== PLACEHOLDER_TEXT) {
-                // 이 상황은 보통 clearAllText()에서만 발생하며,
-                // placeholder가 없는데 active가 true로 설정되려는 경우를 방지
                 editingTarget.innerHTML = PLACEHOLDER_TEXT;
             }
             updateHistoryButtons();
@@ -459,7 +463,7 @@
                 tempDiv.style.cssText = 'font-family: Inter, sans-serif; white-space: pre-wrap; font-size: 1rem;'; 
                 tempDiv.setAttribute('contenteditable', 'true');
                 
-                // 2. HTML을 iOS 호환 구조로 변환합니다. (H 태그를 <p>로 변경)
+                // 2. HTML을 iOS 호환 구조로 변환합니다. (H 태그를 <p>로 변경하고 단순화된 인라인 스타일 적용)
                 let contentHTML = contentDiv.innerHTML;
                 
                 // H1/H2/H3 태그를 인라인 스타일이 적용된 <p> 태그로 변환
@@ -503,7 +507,7 @@
                 document.body.removeChild(tempDiv);
                 
                 // 성공 메시지 표시
-                messageSpan.textContent = '복사 완료! (iOS 메모장 최적화 완료)';
+                messageSpan.textContent = '복사 완료! (Apple 메모 앱 호환성 향상)';
                 messageSpan.classList.remove('opacity-0', 'text-red-600');
                 messageSpan.classList.add('opacity-100', 'text-green-600');
 
@@ -543,7 +547,6 @@
         
         /**
          * @BUG_FIX: 입력 시 Placeholder 텍스트가 함께 입력되는 문제 수정.
-         * 입력 발생 시, Placeholder 텍스트가 남아있으면 제거하고 커서를 재설정합니다.
          */
         editingTarget.addEventListener('input', () => {
             const wasPlaceholderActive = editingTarget.getAttribute('data-placeholder-active') === 'true';
@@ -553,24 +556,21 @@
             if (wasPlaceholderActive && currentRawText.includes(PLACEHOLDER_TEXT) && currentRawText !== PLACEHOLDER_TEXT) {
                 
                 // placeholder 텍스트를 제거하고 실제 입력 내용만 남깁니다.
-                // NOTE: toRawText()가 이미 줄바꿈 등을 처리하여 raw 텍스트를 가져옴
                 const newText = currentRawText.replace(PLACEHOLDER_TEXT, '').trim();
 
                 // 텍스트를 DOM에 다시 설정하여 placeholder 잔여물을 완전히 지우고 커서를 맨 뒤로 옮깁니다.
                 isRestoring = true;
-                editingTarget.innerHTML = newText;
+                // toRenderableHTML을 사용하여 서식이 적용된 상태로 설정
+                editingTarget.innerHTML = toRenderableHTML(newText);
                 
                 // 커서를 맨 뒤로 이동 (이것이 핵심 - 텍스트 입력 후 커서 위치 유지)
                 const range = document.createRange();
                 const sel = window.getSelection();
                 
-                // 텍스트 노드가 존재하면 그 노드의 끝으로 이동
-                if (editingTarget.firstChild && editingTarget.firstChild.nodeType === 3) {
-                    range.setStart(editingTarget.firstChild, editingTarget.firstChild.length);
-                } else {
-                    range.selectNodeContents(editingTarget);
-                }
-                range.collapse(false);
+                // 커서를 편집 영역의 끝으로 이동
+                range.selectNodeContents(editingTarget);
+                range.collapse(false); 
+                
                 sel.removeAllRanges();
                 sel.addRange(range);
                 
