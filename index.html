@@ -114,49 +114,48 @@
                 필기창 (여기에 텍스트를 작성하세요)
             </label>
             
-            <!-- 편집기 컨트롤 -->
-            <div class="flex flex-wrap space-x-2 mb-2 p-2 bg-gray-100 rounded-lg shadow-inner border border-gray-200">
+            <!-- 편집기 컨트롤: flex-wrap -> flex-nowrap overflow-x-auto 로 변경되어 한 줄 표시 및 스크롤 가능하게 함 -->
+            <div class="flex flex-nowrap space-x-2 mb-2 p-2 bg-gray-100 rounded-lg shadow-inner border border-gray-200 overflow-x-auto">
                 <!-- 실행 취소 버튼 (더 큰 화살표 아이콘 사용) -->
                 <button id="undo-button" title="실행 취소" disabled
-                    class="p-2 rounded-md text-gray-600 hover:bg-gray-200 transition duration-150 disabled:text-gray-400 disabled:cursor-not-allowed">
+                    class="p-2 rounded-md text-gray-600 hover:bg-gray-200 transition duration-150 disabled:text-gray-400 disabled:cursor-not-allowed flex-shrink-0">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3"/>
                     </svg>
                 </button>
                 <!-- 다시 실행 버튼 (더 큰 화살표 아이콘 사용) -->
                 <button id="redo-button" title="다시 실행" disabled
-                    class="p-2 rounded-md text-gray-600 hover:bg-gray-200 transition duration-150 disabled:text-gray-400 disabled:cursor-not-allowed">
+                    class="p-2 rounded-md text-gray-600 hover:bg-gray-200 transition duration-150 disabled:text-gray-400 disabled:cursor-not-allowed flex-shrink-0">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M15 9l6 6m0 0l-6 6m6-6H9a6 6 0 010-12h3"/>
                     </svg>
                 </button>
 
-                <span class="border-l border-gray-300 mx-1"></span>
+                <span class="border-l border-gray-300 mx-1 flex-shrink-0"></span>
                 
                 <!-- 제목, 머리말, 부머리말 버튼 추가 (터치 영역 p-2로 확대) -->
                 <button id="title-button" title="제목 (H1)"
-                    class="p-2 rounded-md text-gray-600 hover:bg-gray-200 transition duration-150 font-extrabold text-lg">
+                    class="p-2 rounded-md text-gray-600 hover:bg-gray-200 transition duration-150 font-extrabold text-lg flex-shrink-0">
                     H1
                 </button>
                 <button id="heading-button" title="머리말 (H2)"
-                    class="p-2 rounded-md text-gray-600 hover:bg-gray-200 transition duration-150 font-bold">
+                    class="p-2 rounded-md text-gray-600 hover:bg-gray-200 transition duration-150 font-bold flex-shrink-0">
                     H2
                 </button>
                 <button id="subheading-button" title="부머리말 (H3)"
-                    class="p-2 rounded-md text-gray-600 hover:bg-gray-200 transition duration-150 font-semibold">
+                    class="p-2 rounded-md text-gray-600 hover:bg-gray-200 transition duration-150 font-semibold flex-shrink-0">
                     H3
                 </button>
 
-                <span class="border-l border-gray-300 mx-1"></span>
+                <span class="border-l border-gray-300 mx-1 flex-shrink-0"></span>
 
                 <!-- 기본 포맷 버튼 (터치 영역 p-2로 확대) -->
                 <button id="bold-button" title="굵게 (**텍스트**)"
-                    class="p-2 rounded-md font-bold text-gray-600 hover:bg-gray-200 transition duration-150">
+                    class="p-2 rounded-md font-bold text-gray-600 hover:bg-gray-200 transition duration-150 flex-shrink-0">
                     B
                 </button>
-                <!-- 기울임꼴 버튼이 제거되었습니다. -->
                 <button id="underline-button" title="밑줄 (<u>텍스트</u>)"
-                    class="p-2 rounded-md underline text-gray-600 hover:bg-gray-200 transition duration-150 font-semibold">
+                    class="p-2 rounded-md underline text-gray-600 hover:bg-gray-200 transition duration-150 font-semibold flex-shrink-0">
                     U
                 </button>
             </div>
@@ -186,7 +185,7 @@
 
         <!-- 4. 버전 표시 영역 (새로 추가됨) -->
         <div class="text-right pt-2">
-            <span class="text-xs text-gray-400">v1.0.1 (Optimized)</span>
+            <span class="text-xs text-gray-400">v1.0.2 (Responsive Toolbar)</span>
         </div>
 
     </div>
@@ -226,7 +225,6 @@
             'H3': 'font-size: 1.25rem; font-weight: 600; line-height: 1.5; margin-top: 1rem; margin-bottom: 0.25rem; color: #1f2937;',
             'STRONG': 'font-weight: bold;',
             'B': 'font-weight: bold;',
-            // 기울기 관련 스타일 제거됨
             'U': 'text-decoration: underline;',
         };
 
@@ -240,8 +238,7 @@
         // --- 3. Conversion Functions ---
 
         /**
-         * Raw Text (Markdown: #, ##, **, *)을 HTML (<h1>, <h2>, <strong>)로 변환합니다.
-         * * 기울임꼴 마크다운 변환 로직 제거됨.
+         * Raw Text (Markdown: #, ##, **)을 HTML (<h1>, <h2>, <strong>)로 변환합니다.
          */
         function toRenderableHTML(rawText) {
             if (!rawText) return '';
@@ -254,7 +251,6 @@
             
             // 2. Inline Markdown을 HTML로 변환합니다.
             html = html.replace(/\*\*(.+?)\*\*/gs, '<strong>$1</strong>'); // Bold
-            // 기울임꼴 변환 로직 제거됨: html.replace(/\*(.+?)\*/gs, '<em>$1</em>');
 
             // 3. Raw line breaks를 HTML line breaks로 변환합니다.
             html = html.replace(/\n/g, '<br>');
@@ -263,8 +259,7 @@
         }
 
         /**
-         * HTML Content (editor)를 Markdown/Raw Text (#, ##, **, *)로 변환합니다.
-         * * 기울임꼴 HTML 태그 변환 로직 제거됨.
+         * HTML Content (editor)를 Markdown/Raw Text (#, ##, **)로 변환합니다.
          */
         function toRawText(htmlContent) {
             if (!htmlContent) return '';
@@ -284,8 +279,6 @@
             // B. Inline Element Conversion (Bold)
             raw = raw.replace(/<strong[^>]*>(.*?)<\/strong>/gis, '**$1**');
             raw = raw.replace(/<b[^>]*>(.*?)<\/b>/gis, '**$1**'); 
-            // 기울임꼴 변환 로직 제거됨: raw = raw.replace(/<em[^>]*>(.*?)<\/em>/gis, '*$1*');
-            // 기울임꼴 변환 로직 제거됨: raw = raw.replace(/<i[^>]*>(.*?)<\/i>/gis, '*$1*'); 
 
             // C. Line Break and Cleanup
             raw = raw.replace(/<div[^>]*>(.*?)<\/div>/gis, '$1\n') 
@@ -449,7 +442,6 @@
                 tempDiv.innerHTML = contentDiv.innerHTML; 
                 
                 // --- 인라인 스타일 적용 로직 ---
-                // italic 관련 태그 (em, i) 제거됨
                 const headings = tempDiv.querySelectorAll('h1, h2, h3, strong, u, b');
                 headings.forEach(element => {
                     let style = 'font-family: Inter, sans-serif;';
