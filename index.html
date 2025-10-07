@@ -69,7 +69,7 @@
     <div id="app" class="bg-white p-6 md:p-8 rounded-xl shadow-2xl w-full max-w-lg space-y-6">
         <!-- 제목 크기: text-4xl로 변경하여 가독성 높임 -->
         <h1 class="text-4xl font-extrabold text-gray-900 text-center border-b pb-3 mb-4">
-            공강 필기 도우미 (iOS 복사 서식 유지)
+            공강 필기 도우미
         </h1>
         
         <!-- 고정된 규칙 안내 (숨김 유지) -->
@@ -99,7 +99,8 @@
                 성구 (여기에 붙여넣으세요) - **붙여넣기 시 자동 정리됩니다.**
             </label>
             
-            <textarea id="input-text" rows="6" placeholder="워치타워 온라인 라이브러리에서 성구를 복사하여 여기에 붙여 넣으세요."
+            <!-- rows="3"으로 변경됨 -->
+            <textarea id="input-text" rows="3" placeholder="워치타워 온라인 라이브러리에서 성구를 복사하여 여기에 붙여 넣으세요."
                 class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 shadow-inner"></textarea>
             
             <!-- 처리 버튼 (붙여넣기 자동화로 인해 이제 수동 처리 또는 입력 후 처리용) -->
@@ -191,38 +192,27 @@
 
         <!-- 4. 버전 표시 영역 (새로 추가됨) -->
         <div class="text-right pt-2">
-            <span class="text-xs text-gray-400">v1.0.1</span>
+            <span class="text-xs text-gray-400">v1.0.1 (Optimized)</span>
         </div>
 
     </div>
 
     <script>
-        // DOM 요소 참조
+        // --- 1. DOM 요소 참조 ---
         const inputTextarea = document.getElementById('input-text');
-        const outputTextarea = document.getElementById('output-text'); // 이제 div
+        const outputTextarea = document.getElementById('output-text');
         const copyButton = document.getElementById('copy-button');
         const clearButton = document.getElementById('clear-button'); 
         const processButton = document.getElementById('process-button'); 
         const messageSpan = document.getElementById('message');
-        
-        // 편집기 컨트롤 버튼 참조
         const undoButton = document.getElementById('undo-button');
         const redoButton = document.getElementById('redo-button');
-        const boldButton = document.getElementById('bold-button');
-        const italicButton = document.getElementById('italic-button');
-        const underlineButton = document.getElementById('underline-button');
-        
-        // 구조 포맷팅 버튼 참조
-        const titleButton = document.getElementById('title-button');
-        const headingButton = document.getElementById('heading-button');
-        const subheadingButton = document.getElementById('subheading-button');
-
-        // WOL 사이트 열기 버튼 참조
         const openSiteButton = document.getElementById('open-site-button');
-
+        
+        const editingTarget = outputTextarea;
         const apiKey = "" 
 
-        // 성경의 책 이름 전체 목록 (정규식 생성을 위해 배열로 저장)
+        // 성경의 책 이름 전체 목록
         const BIBLE_BOOKS = [
             '창세기', '출애굽기', '레위기', '민수기', '신명기', '여호수아', '사사기', '룻기', 
             '사무엘상', '사무엘하', '열왕기상', '열왕기하', '역대기상', '역대기하', '에스라', '느헤미야', 
@@ -233,30 +223,37 @@
             '빌립보서', '골로새서', '데살로니가 전서', '데살로니가 후서', '디모데 전서', '디모데 후서', 
             '디도서', '빌레몬서', '히브리서', '야고보서', '베드로 전서', '베드로 후서', 
             '요한 1서', '요한 2서', '요한 3서', '유다서', '요한 계시록'
-        ].sort((a, b) => b.length - b.length);
+        ]; // 불필요한 .sort() 제거
+
+        // iOS 서식 유지를 위한 인라인 스타일 매핑 (copyToClipboard에서 사용)
+        const RICH_TEXT_STYLES = {
+            'H1': 'font-size: 1.875rem; font-weight: 800; line-height: 1.3; margin-top: 1.5rem; margin-bottom: 0.75rem; border-bottom: 2px solid #374151;',
+            'H2': 'font-size: 1.5rem; font-weight: 700; line-height: 1.4; margin-top: 1.25rem; margin-bottom: 0.5rem; border-left: 4px solid #4f46e5; padding-left: 0.5rem;',
+            'H3': 'font-size: 1.25rem; font-weight: 600; line-height: 1.5; margin-top: 1rem; margin-bottom: 0.25rem; color: #1f2937;',
+            'STRONG': 'font-weight: bold;',
+            'B': 'font-weight: bold;',
+            'EM': 'font-style: italic;',
+            'I': 'font-style: italic;',
+            'U': 'text-decoration: underline;',
+        };
 
 
-        // --- 텍스트 편집기 (Undo/Redo) 상태 관리 ---
+        // --- 2. 텍스트 편집기 (Undo/Redo) 상태 관리 ---
         const MAX_HISTORY_SIZE = 50;
         let historyStack = ['']; 
         let historyIndex = 0;
         let isRestoring = false;
         
-        const editingTarget = outputTextarea;
-
-        // --- Conversion Functions ---
+        // --- 3. Conversion Functions ---
 
         /**
          * Raw Text (Markdown: #, ##, **, *)을 HTML (<h1>, <h2>, <strong>, <em>)로 변환합니다.
-         * 이 함수는 히스토리 상태를 출력 영역에 렌더링할 때 사용됩니다.
          */
         function toRenderableHTML(rawText) {
             if (!rawText) return '';
             let html = rawText;
             
             // 1. Markdown Headers를 HTML 태그로 변환합니다.
-            // g(전역), m(줄 시작/끝 일치) 플래그 사용
-            // ^#\s([^\n]+) : 줄 시작의 #, 공백, 그리고 줄 끝까지의 텍스트를 캡처합니다.
             html = html.replace(/^#\s([^\n]+)/gm, '<h1>$1</h1>');
             html = html.replace(/^##\s([^\n]+)/gm, '<h2>$1</h2>');
             html = html.replace(/^###\s([^\n]+)/gm, '<h3>$1</h3>');
@@ -265,7 +262,7 @@
             html = html.replace(/\*\*(.+?)\*\*/gs, '<strong>$1</strong>'); // Bold
             html = html.replace(/\*(.+?)\*/gs, '<em>$1</em>');       // Italic
 
-            // 3. Raw line breaks를 HTML line breaks로 변환합니다. (Header 변환 후 실행)
+            // 3. Raw line breaks를 HTML line breaks로 변환합니다.
             html = html.replace(/\n/g, '<br>');
             
             return html;
@@ -273,26 +270,21 @@
 
         /**
          * HTML Content (editor)를 Markdown/Raw Text (#, ##, **, *)로 변환합니다.
-         * 이 함수는 히스토리 상태 저장 및 메모장 복사 시 사용됩니다.
          */
         function toRawText(htmlContent) {
             if (!htmlContent) return '';
             let raw = htmlContent;
             
-            // 1. 임시 div를 사용하여 HTML 엔티티 등을 처리하고 내부 텍스트를 가져옵니다.
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = raw;
             raw = tempDiv.innerHTML;
 
-            // Normalize line breaks: replace <br> with \n before handling block elements
             raw = raw.replace(/<br[^>]*>/gis, '\n'); 
 
             // A. Block Element Conversion (H1, H2, H3 to Markdown Headers)
-            // \n\n을 추가하여 헤더 앞뒤에 빈 줄을 만들어 가독성을 높입니다.
-            // (.*?)는 캡처 그룹 $1 입니다.
-            raw = raw.replace(/<h1[^>]*>(.*?)<\/h1>/gis, '\n\n# $1\n\n'); // Title -> # 
-            raw = raw.replace(/<h2[^>]*>(.*?)<\/h2>/gis, '\n\n## $1\n\n'); // Heading -> ## 
-            raw = raw.replace(/<h3[^>]*>(.*?)<\/h3>/gis, '\n\n### $1\n\n'); // Subheading -> ### 
+            raw = raw.replace(/<h1[^>]*>(.*?)<\/h1>/gis, '\n\n# $1\n\n'); 
+            raw = raw.replace(/<h2[^>]*>(.*?)<\/h2>/gis, '\n\n## $1\n\n'); 
+            raw = raw.replace(/<h3[^>]*>(.*?)<\/h3>/gis, '\n\n### $1\n\n'); 
             
             // B. Inline Element Conversion (Bold, Italic)
             raw = raw.replace(/<strong[^>]*>(.*?)<\/strong>/gis, '**$1**');
@@ -301,25 +293,20 @@
             raw = raw.replace(/<i[^>]*>(.*?)<\/i>/gis, '*$1*'); 
 
             // C. Line Break and Cleanup
-            // P/DIV 태그를 줄바꿈으로 처리합니다.
             raw = raw.replace(/<div[^>]*>(.*?)<\/div>/gis, '$1\n') 
                      .replace(/<p[^>]*>(.*?)<\/p>/gis, '$1\n')
-                     // 마지막에 모든 HTML 태그(<u> 포함)를 제거하여 순수 텍스트를 만듭니다.
                      .replace(/<[^>]+>/g, '')  
-                     // 빈 줄이 너무 많으면 두 줄 이상을 한 줄로 압축합니다.
                      .replace(/\n\s*\n\s*\n/g, '\n\n') 
                      .trim();
             
             return raw; 
         }
 
-        /**
-         * 현재 텍스트 상태를 기록 스택에 저장합니다.
-         */
+        // --- 4. History Management ---
+
         function saveState() {
             if (isRestoring) return;
 
-            // HTML 컨텐츠를 Raw Text(마크다운 형태)로 변환하여 저장합니다.
             const currentStateRaw = toRawText(editingTarget.innerHTML);
             const lastState = historyStack[historyIndex];
 
@@ -339,94 +326,68 @@
             updateCopyButtonStatus(currentStateRaw);
         }
         
-        /**
-         * Undo/Redo 버튼의 활성화 상태를 업데이트합니다.
-         */
         function updateHistoryButtons() {
             undoButton.disabled = historyIndex === 0;
             redoButton.disabled = historyIndex === historyStack.length - 1;
         }
 
-        /**
-         * 이전 상태로 되돌립니다.
-         */
         function undo() {
             if (historyIndex > 0) {
                 isRestoring = true;
                 historyIndex--;
-                // 저장된 Raw Text(마크다운)를 HTML로 변환하여 출력 영역에 표시합니다.
                 editingTarget.innerHTML = toRenderableHTML(historyStack[historyIndex]);
                 isRestoring = false;
                 updateHistoryButtons();
                 updateCopyButtonStatus(historyStack[historyIndex]);
-                // 포커스를 이동하여 커서 위치를 재설정합니다.
                 editingTarget.focus();
             }
         }
 
-        /**
-         * 다음 상태로 다시 실행합니다.
-         */
         function redo() {
             if (historyIndex < historyStack.length - 1) {
                 isRestoring = true;
                 historyIndex++;
-                // 저장된 Raw Text(마크다운)를 HTML로 변환하여 출력 영역에 표시합니다.
                 editingTarget.innerHTML = toRenderableHTML(historyStack[historyIndex]);
                 isRestoring = false;
                 updateHistoryButtons();
                 updateCopyButtonStatus(historyStack[historyIndex]);
-                // 포커스를 이동하여 커서 위치를 재설정합니다.
                 editingTarget.focus();
             }
         }
 
-        // --- Core Cleaning Logic ---
+        // --- 5. Core Cleaning Logic ---
 
-        /**
-         * 입력된 Raw Text에 고정된 규칙을 적용하여 정리된 문자열을 반환합니다.
-         * @param {string} rawText - 정리할 원본 텍스트
-         * @returns {string} 정리된 텍스트
-         */
         function applyCleaningRules(rawText) {
             if (!rawText) return '';
 
-            // 1. 연속된 '+' 문자를 제거합니다.
+            // 1. 연속된 '+' 문자 제거
             rawText = rawText.replace(/\++/g, '');
             
-            // 2. '신세계역 성경 (연구용)' 문구를 찾아 ')' 하나로 치환하고 주변 공백을 제거하며, 그 뒤의 문자 2개를 제거합니다.
+            // 2. '신세계역 성경 (연구용)' 문구를 찾아 ')' 하나로 치환 및 주변 문자 정리
             const phraseToTarget = "신세계역 성경 (연구용)";
             const escapedPhrase = phraseToTarget.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             const phraseRegex = new RegExp(`[\\s\\r\\n]*${escapedPhrase}[\\s\\r\\n]*.{0,2}`, 'g');
             rawText = rawText.replace(phraseRegex, ')');
 
-            // 3. 숫자, 쉼표, 공백, 숫자 패턴에서 공백을 제거합니다. (예: 1, 000 -> 1,000)
+            // 3. 숫자, 쉼표, 공백, 숫자 패턴에서 공백 제거 (예: 1, 000 -> 1,000)
             rawText = rawText.replace(/(\d+),\s+(\d+)/g, '$1,$2');
             
             const BIBLE_BOOKS_REGEX_STRING = BIBLE_BOOKS.map(name => name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
 
-            // 4. (개선됨) 줄 바꿈(\n)이나 텍스트 시작(^) 바로 뒤에 성경 책 이름이 오면 그 앞에 '('를 삽입합니다.
+            // 4. 줄 바꿈(\n)이나 텍스트 시작(^) 바로 뒤에 성경 책 이름이 오면 그 앞에 '(' 삽입
             const bookStartRegex = new RegExp(`(^|\\n)(${BIBLE_BOOKS_REGEX_STRING})`, 'g');
             rawText = rawText.replace(bookStartRegex, '$1($2');
 
-            // 5. WOL 텍스트에서 불필요한 단일 별표 문자('*')를 제거하여 원치 않는 기울임꼴 변환을 방지합니다.
-            // a) **를 임시 치환하여 보존합니다.
+            // 5. 단일 별표 문자('*') 제거 (강조된 별표(**) 보존)
             let cleanedText = rawText.replace(/\*\*/g, '@@@BOLD_TEMP@@@');
-            
-            // b) 남은 모든 단일 *를 제거합니다.
             cleanedText = cleanedText.replace(/\*/g, '');
-
-            // c) 임시 치환된 @@BOLD_TEMP@@를 다시 **로 복원합니다.
             rawText = cleanedText.replace(/@@@BOLD_TEMP@@@/g, '**');
 
             return rawText.trim();
         }
         
-        // --- Core Processing Function ---
+        // --- 6. Core Processing & Utility ---
 
-        /**
-         * 입력 텍스트를 정리하고 출력 텍스트에 추가하는 핵심 로직입니다.
-         */
         function processAndAppend() {
             const inputRaw = inputTextarea.value.trim();
             
@@ -434,38 +395,24 @@
                 return;
             }
 
-            // 1. 입력 텍스트 정리
             const cleanedRawText = applyCleaningRules(inputRaw);
-
-            // 2. 현재 출력 텍스트 가져오기 (Raw Text 형태)
             let currentOutputRaw = toRawText(editingTarget.innerHTML);
-            
-            // 3. 정리된 텍스트를 현재 출력 텍스트의 마지막에 추가합니다.
             let newOutputRaw = currentOutputRaw;
             
-            // 기존 내용이 있으면 줄바꿈 두 개(\n\n)를 추가하여 빈 줄을 만듭니다.
             if (newOutputRaw.length > 0) {
                 newOutputRaw += '\n\n' + cleanedRawText; 
             } else {
                 newOutputRaw = cleanedRawText;
             }
 
-            // 4. 출력 영역 업데이트 및 스크롤 (가장 최근 내용이 보이도록 스크롤합니다)
             editingTarget.innerHTML = toRenderableHTML(newOutputRaw);
-            editingTarget.scrollTop = editingTarget.scrollHeight; // 맨 아래로 스크롤
+            editingTarget.scrollTop = editingTarget.scrollHeight; 
 
-            // 5. 입력 영역 지우기
             inputTextarea.value = '';
-
-            // 6. 히스토리 저장
             saveState(); 
         }
 
-        /**
-         * 출력 텍스트 상태(Raw Text 기준)에 따라 복사 버튼을 활성화/비활성화합니다.
-         */
         function updateCopyButtonStatus(text) {
-             // toRawText로 변환된 내용(마크다운 포함)을 기반으로 체크
              if (text.trim().length > 0) {
                 copyButton.disabled = false;
             } else {
@@ -473,96 +420,52 @@
             }
         }
 
-
-        // --- 텍스트 포맷팅 로직 (Output에 적용) ---
-
-        /**
-         * 출력 텍스트 영역의 선택된 텍스트에 포맷을 적용합니다 (execCommand 사용).
-         */
         function applyFormat(command) {
             editingTarget.focus();
             document.execCommand(command, false, null);
             saveState(); 
         }
 
-        /**
-         * 출력 텍스트 영역의 선택된 텍스트에 블록 포맷(제목, 머리말 등)을 적용합니다.
-         */
         function applyFormatBlock(tag) {
             editingTarget.focus();
-            // formatBlock 명령어 사용: 선택된 텍스트를 지정된 블록 요소(예: <h1>, <h2>, <p>)로 감쌉니다.
             document.execCommand('formatBlock', false, tag);
             saveState(); 
         }
 
-        /**
-         * 입력 및 출력 영역의 모든 텍스트를 지우고 상태를 초기화합니다.
-         */
         function clearAllText() {
             inputTextarea.value = '';
-            // 출력 영역만 비웁니다.
             editingTarget.innerHTML = '';
-            
-            // 비어있는 상태를 히스토리에 저장하여, Undo 버튼을 누르면 직전 상태로 복구 가능하도록 합니다.
             saveState(); 
             
-            // 메시지 숨기기
             messageSpan.classList.remove('opacity-100');
             messageSpan.classList.add('opacity-0');
             messageSpan.textContent = '';
         }
 
-        /**
-         * iOS 및 Rich Text 환경을 위해 HTML 서식을 포함하여 복사하는 기능입니다.
-         * 이 함수는 복사 전 HTML 요소에 인라인 스타일을 적용하여 서식 유지력을 높입니다.
-         */
         function copyToClipboard() {
             const contentDiv = editingTarget;
             
-            // 복사할 내용이 없으면 중단 (Raw Text 기준으로 체크)
             if (toRawText(contentDiv.innerHTML).trim() === "") {
                 return; 
             }
             
             try {
-                // 1. 임시 div 생성 (화면 밖으로 숨김)
                 const tempDiv = document.createElement('div');
-                // 현재 화면에 보이는 Rich Text (HTML) 내용을 그대로 복사할 div에 넣습니다.
                 tempDiv.innerHTML = contentDiv.innerHTML; 
                 
-                // --- 핵심 수정: 제목/머리말에 인라인 스타일을 적용하여 iOS 앱에서의 서식 유지력을 높입니다. ---
-                const headings = tempDiv.querySelectorAll('h1, h2, h3, strong, em, u');
+                // --- 인라인 스타일 적용 로직 간소화 ---
+                const headings = tempDiv.querySelectorAll('h1, h2, h3, strong, em, u, b, i');
                 headings.forEach(element => {
-                    // 기본 글꼴 설정을 위한 기본 스타일
                     let style = 'font-family: Inter, sans-serif;';
+                    const tag = element.tagName;
 
-                    if (element.tagName === 'H1') {
-                        // 제목 (H1) 스타일 (30px, 굵기 800)
-                        style += 'font-size: 1.875rem; font-weight: 800; line-height: 1.3; margin-top: 1.5rem; margin-bottom: 0.75rem; border-bottom: 2px solid #374151;';
-                    } else if (element.tagName === 'H2') {
-                        // 머리말 (H2) 스타일 (24px, 굵기 700)
-                        style += 'font-size: 1.5rem; font-weight: 700; line-height: 1.4; margin-top: 1.25rem; margin-bottom: 0.5rem; border-left: 4px solid #4f46e5; padding-left: 0.5rem;';
-                    } else if (element.tagName === 'H3') {
-                        // 부머리말 (H3) 스타일 (20px, 굵기 600)
-                        style += 'font-size: 1.25rem; font-weight: 600; line-height: 1.5; margin-top: 1rem; margin-bottom: 0.25rem; color: #1f2937;';
-                    } else if (element.tagName === 'STRONG' || element.tagName === 'B') {
-                        // 굵게
-                        style += 'font-weight: bold;';
-                    } else if (element.tagName === 'EM' || element.tagName === 'I') {
-                        // 기울임
-                        style += 'font-style: italic;';
-                    } else if (element.tagName === 'U') {
-                        // 밑줄
-                        style += 'text-decoration: underline;';
+                    if (RICH_TEXT_STYLES[tag]) {
+                        style += RICH_TEXT_STYLES[tag];
                     }
-
-                    // 스타일을 기존 스타일과 병합 (만약 있다면)
                     element.style.cssText += style;
                 });
-                // ----------------------------------------------------------------------
+                // ------------------------------------
 
-
-                // Rich Text 복사를 위해 스타일 적용 및 contenteditable 설정
                 tempDiv.style.position = 'absolute';
                 tempDiv.style.left = '-9999px';
                 tempDiv.style.width = '0';
@@ -571,17 +474,14 @@
                 tempDiv.setAttribute('contenteditable', 'true'); 
                 document.body.appendChild(tempDiv);
                 
-                // 2. 임시 div 내용 전체 선택
                 const range = document.createRange();
                 range.selectNodeContents(tempDiv);
                 const selection = window.getSelection();
                 selection.removeAllRanges();
                 selection.addRange(range);
 
-                // 3. 복사 실행 (클립보드에 Plain Text와 Rich Text 모두 복사됨)
                 document.execCommand('copy');
                 
-                // 4. 정리
                 selection.removeAllRanges();
                 document.body.removeChild(tempDiv);
                 
@@ -604,9 +504,6 @@
             }
         }
 
-        /**
-         * 애플리케이션의 초기 상태를 설정합니다.
-         */
         function initializeState() {
             inputTextarea.value = '';
             editingTarget.innerHTML = '';
@@ -616,41 +513,50 @@
             updateCopyButtonStatus('');
         }
 
-        // --- 이벤트 리스너 설정 ---
+        // --- 7. 이벤트 리스너 설정 (간결화됨) ---
 
-        // "WOL 성경 사이트 열기" 버튼에 핸들러 연결
+        // WOL 사이트 열기 및 주요 버튼
         openSiteButton.addEventListener('click', () => {
             window.open('https://wol.jw.org/ko/wol/h/r8/lp-ko', 'wol_tab');
         });
-        
-        // "아래에 추가하기" 버튼에 핸들러 연결
         processButton.addEventListener('click', processAndAppend);
-
-        // --- 붙여넣기(Paste) 감지 및 자동 처리 ---
-        inputTextarea.addEventListener('paste', () => {
-            setTimeout(() => {
-                processAndAppend();
-            }, 50); // 50ms 지연
-        });
-        
-        // 출력 텍스트 영역의 내용이 바뀔 때마다 히스토리와 버튼 상태를 업데이트합니다.
-        editingTarget.addEventListener('input', saveState);
-        
-        // 버튼 클릭 이벤트 연결
         copyButton.addEventListener('click', copyToClipboard);
         clearButton.addEventListener('click', clearAllText); 
         undoButton.addEventListener('click', undo);
         redoButton.addEventListener('click', redo);
 
-        // 기본 포맷 버튼
-        boldButton.addEventListener('click', () => applyFormat('bold'));
-        italicButton.addEventListener('click', () => applyFormat('italic'));
-        underlineButton.addEventListener('click', () => applyFormat('underline'));
+        // 붙여넣기(Paste) 감지 및 자동 처리
+        inputTextarea.addEventListener('paste', () => {
+            setTimeout(processAndAppend, 50); 
+        });
+        
+        // 출력 텍스트 영역의 내용이 바뀔 때마다 히스토리 저장
+        editingTarget.addEventListener('input', saveState);
 
-        // 구조 포맷 버튼
-        titleButton.addEventListener('click', () => applyFormatBlock('<h1>'));
-        headingButton.addEventListener('click', () => applyFormatBlock('<h2>'));
-        subheadingButton.addEventListener('click', () => applyFormatBlock('<h3>'));
+        // --- 포맷팅 버튼 그룹화 (간결화) ---
+        
+        // 구조 포맷 (H1, H2, H3)
+        const structureMap = {
+            'title-button': '<h1>',
+            'heading-button': '<h2>',
+            'subheading-button': '<h3>',
+        };
+
+        Object.entries(structureMap).forEach(([id, tag]) => {
+            document.getElementById(id).addEventListener('click', () => applyFormatBlock(tag));
+        });
+
+        // 기본 포맷 (Bold, Italic, Underline)
+        const basicFormatMap = {
+            'bold-button': 'bold',
+            'italic-button': 'italic',
+            'underline-button': 'underline',
+        };
+
+        Object.entries(basicFormatMap).forEach(([id, command]) => {
+            document.getElementById(id).addEventListener('click', () => applyFormat(command));
+        });
+        // -------------------------------------
 
         // 초기 상태 설정
         initializeState(); 
