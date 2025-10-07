@@ -11,26 +11,46 @@
         :root {
             font-family: 'Inter', sans-serif;
         }
+        /* 삭제 버튼 스타일 */
+        .remove-btn {
+            line-height: 1;
+            transition: color 0.15s ease;
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen p-4 flex items-center justify-center">
 
     <div id="app" class="bg-white p-6 md:p-8 rounded-xl shadow-2xl w-full max-w-lg space-y-6">
         <h1 class="text-3xl font-extrabold text-gray-900 text-center border-b pb-3 mb-4">
-            텍스트 클리너 (연속된 + & 지정 문자 제거)
+            텍스트 클리너 (단어열 제거)
         </h1>
         
-        <!-- 1.1 제거 문자 지정 영역 (추가된 기능) -->
-        <div class="pb-2">
-            <label for="removal-chars" class="block text-sm font-medium text-gray-700 mb-2">
-                추가로 **제거할 문자 목록**
+        <!-- 1. 제거 단어/문구 입력 및 추가 영역 -->
+        <div class="space-y-3">
+            <label class="block text-sm font-medium text-gray-700">
+                제거할 **단어열/문구** 추가
             </label>
-            <input type="text" id="removal-chars" placeholder="예: *^$#@ (여기에 입력된 모든 문자가 텍스트에서 제거됩니다)"
-                   class="w-full p-3 border-2 border-red-200 rounded-lg focus:ring-red-500 focus:border-red-500 transition duration-150 shadow-inner placeholder-red-400">
-            <p class="text-xs text-gray-500 mt-1">※ 기본적으로 **연속된 '+' 문자**는 항상 제거됩니다.</p>
+            <div class="flex gap-2">
+                <input type="text" id="phrase-input" placeholder="예: 신세계역 성경 (연구용)"
+                       class="flex-grow p-3 border-2 border-red-200 rounded-lg focus:ring-red-500 focus:border-red-500 shadow-inner placeholder-gray-400">
+                <button id="add-phrase-button"
+                        class="shrink-0 px-4 py-3 bg-red-500 text-white font-semibold rounded-lg shadow-md hover:bg-red-600 transition duration-150 transform hover:scale-105 active:scale-95 disabled:bg-red-300">
+                    추가
+                </button>
+            </div>
+            
+            <!-- 1.1 현재 제거 목록 표시 영역 -->
+            <div id="phrase-list-container" class="border border-red-100 bg-red-50 p-3 rounded-lg min-h-[40px] space-y-2">
+                <p class="text-xs text-red-700 font-semibold">
+                    현재 제거 목록:
+                </p>
+                <div id="phrase-list" class="flex flex-wrap gap-2">
+                    <!-- 제거할 항목들이 여기에 표시됩니다 -->
+                </div>
+            </div>
         </div>
         
-        <!-- 1. 입력 영역 (기존) -->
+        <!-- 2. 입력 영역 -->
         <div>
             <label for="input-text" class="block text-sm font-medium text-gray-700 mb-2">
                 원본 텍스트 (여기에 붙여넣으세요)
@@ -39,7 +59,7 @@
                 class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 shadow-inner"></textarea>
         </div>
 
-        <!-- 2. 결과 영역 -->
+        <!-- 3. 결과 영역 -->
         <div>
             <label for="output-text" class="block text-sm font-medium text-gray-700 mb-2">
                 정리된 텍스트
@@ -48,7 +68,7 @@
                 class="w-full p-3 border border-gray-300 bg-gray-50 rounded-lg text-gray-800 transition duration-150 font-mono"></textarea>
         </div>
 
-        <!-- 3. 버튼 및 메시지 영역 -->
+        <!-- 4. 버튼 및 메시지 영역 -->
         <div class="flex flex-col sm:flex-row sm:justify-between items-center gap-4 pt-2">
             <button id="copy-button"
                 class="w-full sm:w-auto px-6 py-3 bg-indigo-600 text-white font-semibold rounded-full shadow-lg hover:bg-indigo-700 transition duration-200 transform hover:scale-105 active:scale-95 disabled:bg-indigo-300 disabled:cursor-not-allowed">
@@ -64,33 +84,68 @@
         const outputTextarea = document.getElementById('output-text');
         const copyButton = document.getElementById('copy-button');
         const messageSpan = document.getElementById('message');
-        const removalCharsInput = document.getElementById('removal-chars'); // **새로 추가된 입력 필드**
+        const phraseInput = document.getElementById('phrase-input');
+        const addPhraseButton = document.getElementById('add-phrase-button');
+        const phraseListDiv = document.getElementById('phrase-list');
+
+        let removalPhrases = []; // 제거할 단어열/문구 리스트 (JavaScript 배열로 관리)
         const apiKey = "" // API 키를 여기에 넣을 수 있습니다. 현재는 사용하지 않습니다.
 
+
         /**
-         * 텍스트에서 연속된 '+' 문자와 사용자가 지정한 문자를 제거하고 결과를 출력 textarea에 반영합니다.
+         * 제거 목록 배열을 기반으로 목록 영역을 다시 그립니다.
+         */
+        function renderPhraseList() {
+            phraseListDiv.innerHTML = '';
+
+            // 기본 규칙: 연속된 '+' 제거 표시
+            const defaultChip = document.createElement('span');
+            defaultChip.className = 'inline-flex items-center px-3 py-1 text-xs font-medium bg-gray-200 text-gray-700 rounded-full';
+            defaultChip.textContent = '연속된 + (기본)';
+            phraseListDiv.appendChild(defaultChip);
+
+            removalPhrases.forEach((phrase, index) => {
+                const chip = document.createElement('span');
+                chip.className = 'inline-flex items-center px-3 py-1 text-sm font-medium bg-red-400 text-white rounded-full transition duration-150';
+                chip.innerHTML = `
+                    <span class="truncate max-w-[150px]">${phrase}</span>
+                    <button data-index="${index}" class="remove-btn ml-2 text-red-100 hover:text-white focus:outline-none" title="제거">
+                        &times;
+                    </button>
+                `;
+                
+                // 삭제 버튼 이벤트 리스너 추가
+                chip.querySelector('.remove-btn').addEventListener('click', (e) => {
+                    const idx = parseInt(e.currentTarget.getAttribute('data-index'));
+                    removePhrase(idx);
+                });
+
+                phraseListDiv.appendChild(chip);
+            });
+        }
+
+        /**
+         * 텍스트에서 연속된 '+' 문자와 사용자가 지정한 단어열을 제거합니다.
          */
         function cleanText() {
-            const rawText = inputTextarea.value;
+            let cleanedText = inputTextarea.value;
             
-            // 1. 연속된 '+' 문자를 제거합니다. (기존 로직)
+            // 1. 연속된 '+' 문자를 제거합니다. (기존 로직 유지)
             // 정규 표현식 /\++/g: 하나 이상의 연속된 '+' 문자를 전역적으로 찾아서 제거
-            let cleanedText = rawText.replace(/\++/g, '');
+            cleanedText = cleanedText.replace(/\++/g, '');
 
-            // 2. 사용자가 지정한 추가 제거 문자를 가져옵니다.
-            let additionalChars = removalCharsInput.value.trim();
-
-            if (additionalChars) {
-                // 정규 표현식 특수 문자를 이스케이프 처리합니다.
-                // 사용자가 입력한 문자가 정규식 문법에 의해 오작동하지 않도록 '\'를 붙여줍니다.
-                const escapedChars = additionalChars.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            // 2. 사용자가 지정한 단어열/문구 제거
+            removalPhrases.forEach(phrase => {
+                // 단어열을 정규식으로 안전하게 처리 (특수문자 이스케이프)
+                // 이렇게 해야 '()'나 '[]' 같은 문자가 정규식 문법으로 인식되지 않고 문자열 그대로 인식됩니다.
+                const escapedPhrase = phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                 
-                // 추가 제거할 문자들을 찾는 정규식: 예) /[*^$#@]/g
-                const removalRegex = new RegExp(`[${escapedChars}]`, 'g');
+                // 정확히 그 문구만 찾는 전역 정규식 생성 (g 플래그로 모두 제거)
+                const phraseRegex = new RegExp(escapedPhrase, 'g');
                 
-                // 해당 문자들을 제거합니다.
-                cleanedText = cleanedText.replace(removalRegex, '');
-            }
+                // 해당 단어열들을 텍스트에서 제거합니다.
+                cleanedText = cleanedText.replace(phraseRegex, '');
+            });
             
             outputTextarea.value = cleanedText;
 
@@ -101,6 +156,30 @@
                 copyButton.disabled = true;
             }
         }
+
+        /**
+         * 새로운 단어열을 목록에 추가합니다.
+         */
+        function addPhrase() {
+            const newPhrase = phraseInput.value.trim();
+            if (newPhrase && !removalPhrases.includes(newPhrase)) {
+                removalPhrases.push(newPhrase);
+                phraseInput.value = ''; // 입력창 초기화
+                renderPhraseList(); // 목록 새로 고침
+                cleanText(); // 텍스트 재정리
+            }
+        }
+
+        /**
+         * 지정된 인덱스의 단어열을 목록에서 제거합니다.
+         * @param {number} index 제거할 요소의 인덱스
+         */
+        function removePhrase(index) {
+            removalPhrases.splice(index, 1);
+            renderPhraseList(); // 목록 새로 고침
+            cleanText(); // 텍스트 재정리
+        }
+
 
         /**
          * 정리된 텍스트를 클립보드에 복사하고 성공 메시지를 표시합니다.
@@ -115,7 +194,7 @@
             try {
                 // 텍스트를 클립보드에 복사합니다.
                 outputTextarea.select();
-                outputTextarea.setSelectionRange(0, 99999); // 모바일 장치 대응
+                outputTextarea.setSelectionRange(0, 99999); 
                 document.execCommand('copy');
                 
                 // 성공 메시지 표시
@@ -143,15 +222,24 @@
         // 1. 입력 텍스트 영역에 내용이 바뀔 때마다 텍스트를 정리합니다.
         inputTextarea.addEventListener('input', cleanText);
 
-        // 1.1. 제거 문자 목록이 바뀔 때도 텍스트를 정리합니다.
-        removalCharsInput.addEventListener('input', cleanText);
+        // 2. 추가 버튼 클릭 시 단어열을 추가합니다.
+        addPhraseButton.addEventListener('click', addPhrase);
 
-        // 2. 버튼 클릭 시 텍스트를 복사합니다.
+        // 3. Enter 키 입력 시에도 단어열을 추가합니다.
+        phraseInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault(); // 기본 폼 제출 방지
+                addPhrase();
+            }
+        });
+
+        // 4. 버튼 클릭 시 텍스트를 복사합니다.
         copyButton.addEventListener('click', copyToClipboard);
 
         // 초기 상태 설정
         copyButton.disabled = true; 
-        cleanText(); // 페이지 로드 시 한 번 실행하여 초기 상태를 설정합니다.
+        renderPhraseList(); // 초기 목록 렌더링 (연속된 + 규칙 표시)
+        cleanText(); 
 
     </script>
 </body>
