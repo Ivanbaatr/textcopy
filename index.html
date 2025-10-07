@@ -33,9 +33,6 @@
         #output-text strong {
             font-weight: 700; /* Bold */
         }
-        #output-text em {
-            font-style: italic;
-        }
         /* 제목 (Title - H1) 스타일 */
         #output-text h1 {
             font-size: 1.875rem; /* 30px */
@@ -157,10 +154,7 @@
                     class="p-2 rounded-md font-bold text-gray-600 hover:bg-gray-200 transition duration-150">
                     B
                 </button>
-                <button id="italic-button" title="기울임 (*텍스트*)"
-                    class="p-2 rounded-md italic text-gray-600 hover:bg-gray-200 transition duration-150">
-                    I
-                </button>
+                <!-- 기울임꼴 버튼이 제거되었습니다. -->
                 <button id="underline-button" title="밑줄 (<u>텍스트</u>)"
                     class="p-2 rounded-md underline text-gray-600 hover:bg-gray-200 transition duration-150 font-semibold">
                     U
@@ -223,7 +217,7 @@
             '빌립보서', '골로새서', '데살로니가 전서', '데살로니가 후서', '디모데 전서', '디모데 후서', 
             '디도서', '빌레몬서', '히브리서', '야고보서', '베드로 전서', '베드로 후서', 
             '요한 1서', '요한 2서', '요한 3서', '유다서', '요한 계시록'
-        ]; // 불필요한 .sort() 제거
+        ];
 
         // iOS 서식 유지를 위한 인라인 스타일 매핑 (copyToClipboard에서 사용)
         const RICH_TEXT_STYLES = {
@@ -232,8 +226,7 @@
             'H3': 'font-size: 1.25rem; font-weight: 600; line-height: 1.5; margin-top: 1rem; margin-bottom: 0.25rem; color: #1f2937;',
             'STRONG': 'font-weight: bold;',
             'B': 'font-weight: bold;',
-            'EM': 'font-style: italic;',
-            'I': 'font-style: italic;',
+            // 기울기 관련 스타일 제거됨
             'U': 'text-decoration: underline;',
         };
 
@@ -247,7 +240,8 @@
         // --- 3. Conversion Functions ---
 
         /**
-         * Raw Text (Markdown: #, ##, **, *)을 HTML (<h1>, <h2>, <strong>, <em>)로 변환합니다.
+         * Raw Text (Markdown: #, ##, **, *)을 HTML (<h1>, <h2>, <strong>)로 변환합니다.
+         * * 기울임꼴 마크다운 변환 로직 제거됨.
          */
         function toRenderableHTML(rawText) {
             if (!rawText) return '';
@@ -260,7 +254,7 @@
             
             // 2. Inline Markdown을 HTML로 변환합니다.
             html = html.replace(/\*\*(.+?)\*\*/gs, '<strong>$1</strong>'); // Bold
-            html = html.replace(/\*(.+?)\*/gs, '<em>$1</em>');       // Italic
+            // 기울임꼴 변환 로직 제거됨: html.replace(/\*(.+?)\*/gs, '<em>$1</em>');
 
             // 3. Raw line breaks를 HTML line breaks로 변환합니다.
             html = html.replace(/\n/g, '<br>');
@@ -270,6 +264,7 @@
 
         /**
          * HTML Content (editor)를 Markdown/Raw Text (#, ##, **, *)로 변환합니다.
+         * * 기울임꼴 HTML 태그 변환 로직 제거됨.
          */
         function toRawText(htmlContent) {
             if (!htmlContent) return '';
@@ -286,11 +281,11 @@
             raw = raw.replace(/<h2[^>]*>(.*?)<\/h2>/gis, '\n\n## $1\n\n'); 
             raw = raw.replace(/<h3[^>]*>(.*?)<\/h3>/gis, '\n\n### $1\n\n'); 
             
-            // B. Inline Element Conversion (Bold, Italic)
+            // B. Inline Element Conversion (Bold)
             raw = raw.replace(/<strong[^>]*>(.*?)<\/strong>/gis, '**$1**');
             raw = raw.replace(/<b[^>]*>(.*?)<\/b>/gis, '**$1**'); 
-            raw = raw.replace(/<em[^>]*>(.*?)<\/em>/gis, '*$1*');
-            raw = raw.replace(/<i[^>]*>(.*?)<\/i>/gis, '*$1*'); 
+            // 기울임꼴 변환 로직 제거됨: raw = raw.replace(/<em[^>]*>(.*?)<\/em>/gis, '*$1*');
+            // 기울임꼴 변환 로직 제거됨: raw = raw.replace(/<i[^>]*>(.*?)<\/i>/gis, '*$1*'); 
 
             // C. Line Break and Cleanup
             raw = raw.replace(/<div[^>]*>(.*?)<\/div>/gis, '$1\n') 
@@ -453,8 +448,9 @@
                 const tempDiv = document.createElement('div');
                 tempDiv.innerHTML = contentDiv.innerHTML; 
                 
-                // --- 인라인 스타일 적용 로직 간소화 ---
-                const headings = tempDiv.querySelectorAll('h1, h2, h3, strong, em, u, b, i');
+                // --- 인라인 스타일 적용 로직 ---
+                // italic 관련 태그 (em, i) 제거됨
+                const headings = tempDiv.querySelectorAll('h1, h2, h3, strong, u, b');
                 headings.forEach(element => {
                     let style = 'font-family: Inter, sans-serif;';
                     const tag = element.tagName;
@@ -513,7 +509,7 @@
             updateCopyButtonStatus('');
         }
 
-        // --- 7. 이벤트 리스너 설정 (간결화됨) ---
+        // --- 7. 이벤트 리스너 설정 ---
 
         // WOL 사이트 열기 및 주요 버튼
         openSiteButton.addEventListener('click', () => {
@@ -533,7 +529,7 @@
         // 출력 텍스트 영역의 내용이 바뀔 때마다 히스토리 저장
         editingTarget.addEventListener('input', saveState);
 
-        // --- 포맷팅 버튼 그룹화 (간결화) ---
+        // --- 포맷팅 버튼 그룹화 ---
         
         // 구조 포맷 (H1, H2, H3)
         const structureMap = {
@@ -546,17 +542,16 @@
             document.getElementById(id).addEventListener('click', () => applyFormatBlock(tag));
         });
 
-        // 기본 포맷 (Bold, Italic, Underline)
+        // 기본 포맷 (Bold, Underline) - Italic 제거됨
         const basicFormatMap = {
             'bold-button': 'bold',
-            'italic-button': 'italic',
             'underline-button': 'underline',
         };
 
         Object.entries(basicFormatMap).forEach(([id, command]) => {
             document.getElementById(id).addEventListener('click', () => applyFormat(command));
         });
-        // -------------------------------------
+        // -------------------------
 
         // 초기 상태 설정
         initializeState(); 
