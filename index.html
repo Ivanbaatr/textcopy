@@ -36,6 +36,32 @@
         #output-text em {
             font-style: italic;
         }
+        /* 제목 (Title - H1) 스타일 */
+        #output-text h1 {
+            font-size: 1.875rem; /* 30px */
+            font-weight: 800; /* Extra bold */
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.25rem;
+            border-bottom: 2px solid #374151; /* Gray-700 */
+        }
+        /* 머리말 (Heading - H2) 스타일 */
+        #output-text h2 {
+            font-size: 1.5rem; /* 24px */
+            font-weight: 700; /* Bold */
+            margin-top: 1.25rem;
+            margin-bottom: 0.5rem;
+            padding-left: 0.5rem;
+            border-left: 4px solid #4f46e5; /* Indigo-600 */
+        }
+        /* 부머리말 (Subheading - H3) 스타일 */
+        #output-text h3 {
+            font-size: 1.25rem; /* 20px */
+            font-weight: 600; /* Semibold */
+            margin-top: 1rem;
+            margin-bottom: 0.25rem;
+            color: #1f2937; /* Gray-800 */
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen p-4 flex items-center justify-center">
@@ -43,7 +69,7 @@
     <div id="app" class="bg-white p-6 md:p-8 rounded-xl shadow-2xl w-full max-w-lg space-y-6">
         <!-- 제목 크기: text-4xl로 변경하여 가독성 높임 -->
         <h1 class="text-4xl font-extrabold text-gray-900 text-center border-b pb-3 mb-4">
-            공강 필기 도우미
+            공강 필기 도우미 (iOS 복사 서식 유지)
         </h1>
         
         <!-- 고정된 규칙 안내 (숨김 유지) -->
@@ -70,16 +96,16 @@
 
             <!-- 라벨 크기: text-sm -> text-base 로 변경 -->
             <label for="input-text" class="block text-base font-medium text-gray-700 mb-2">
-                성구 (여기에 붙여넣으세요)
+                성구 (여기에 붙여넣으세요) - **붙여넣기 시 자동 정리됩니다.**
             </label>
             
-            <textarea id="input-text" rows="8" placeholder="워치타워 온라인 라이브러리에서 성구를 복사하여 여기에 붙여 넣으세요."
+            <textarea id="input-text" rows="6" placeholder="워치타워 온라인 라이브러리에서 성구를 복사하여 여기에 붙여 넣으세요."
                 class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 shadow-inner"></textarea>
             
-            <!-- 처리 버튼 -->
+            <!-- 처리 버튼 (붙여넣기 자동화로 인해 이제 수동 처리 또는 입력 후 처리용) -->
             <button id="process-button"
                 class="w-full mt-3 px-6 py-2 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 transition duration-200 transform hover:scale-[1.01] active:scale-[0.99] disabled:bg-green-300 disabled:cursor-not-allowed">
-                아래에 추가하기
+                아래에 추가하기 (수동 처리)
             </button>
         </div>
 
@@ -91,32 +117,51 @@
             </label>
             
             <!-- 편집기 컨트롤 -->
-            <div class="flex space-x-2 mb-2 p-2 bg-gray-100 rounded-lg shadow-inner border border-gray-200">
+            <div class="flex flex-wrap space-x-2 mb-2 p-2 bg-gray-100 rounded-lg shadow-inner border border-gray-200">
                 <!-- 실행 취소 버튼 (더 큰 화살표 아이콘 사용) -->
                 <button id="undo-button" title="실행 취소" disabled
-                    class="p-1.5 rounded-md text-gray-600 hover:bg-gray-200 transition duration-150 disabled:text-gray-400 disabled:cursor-not-allowed">
+                    class="p-2 rounded-md text-gray-600 hover:bg-gray-200 transition duration-150 disabled:text-gray-400 disabled:cursor-not-allowed">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3"/>
                     </svg>
                 </button>
                 <!-- 다시 실행 버튼 (더 큰 화살표 아이콘 사용) -->
                 <button id="redo-button" title="다시 실행" disabled
-                    class="p-1.5 rounded-md text-gray-600 hover:bg-gray-200 transition duration-150 disabled:text-gray-400 disabled:cursor-not-allowed">
+                    class="p-2 rounded-md text-gray-600 hover:bg-gray-200 transition duration-150 disabled:text-gray-400 disabled:cursor-not-allowed">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M15 9l6 6m0 0l-6 6m6-6H9a6 6 0 010-12h3"/>
                     </svg>
                 </button>
+
                 <span class="border-l border-gray-300 mx-1"></span>
+                
+                <!-- 제목, 머리말, 부머리말 버튼 추가 (터치 영역 p-2로 확대) -->
+                <button id="title-button" title="제목 (H1)"
+                    class="p-2 rounded-md text-gray-600 hover:bg-gray-200 transition duration-150 font-extrabold text-lg">
+                    H1
+                </button>
+                <button id="heading-button" title="머리말 (H2)"
+                    class="p-2 rounded-md text-gray-600 hover:bg-gray-200 transition duration-150 font-bold">
+                    H2
+                </button>
+                <button id="subheading-button" title="부머리말 (H3)"
+                    class="p-2 rounded-md text-gray-600 hover:bg-gray-200 transition duration-150 font-semibold">
+                    H3
+                </button>
+
+                <span class="border-l border-gray-300 mx-1"></span>
+
+                <!-- 기본 포맷 버튼 (터치 영역 p-2로 확대) -->
                 <button id="bold-button" title="굵게 (**텍스트**)"
-                    class="p-1.5 rounded-md font-bold text-gray-600 hover:bg-gray-200 transition duration-150">
+                    class="p-2 rounded-md font-bold text-gray-600 hover:bg-gray-200 transition duration-150">
                     B
                 </button>
                 <button id="italic-button" title="기울임 (*텍스트*)"
-                    class="p-1.5 rounded-md italic text-gray-600 hover:bg-gray-200 transition duration-150">
+                    class="p-2 rounded-md italic text-gray-600 hover:bg-gray-200 transition duration-150">
                     I
                 </button>
                 <button id="underline-button" title="밑줄 (<u>텍스트</u>)"
-                    class="p-1.5 rounded-md underline text-gray-600 hover:bg-gray-200 transition duration-150 font-semibold">
+                    class="p-2 rounded-md underline text-gray-600 hover:bg-gray-200 transition duration-150 font-semibold">
                     U
                 </button>
             </div>
@@ -146,7 +191,7 @@
 
         <!-- 4. 버전 표시 영역 (새로 추가됨) -->
         <div class="text-right pt-2">
-            <span class="text-xs text-gray-400">v1.0.0</span>
+            <span class="text-xs text-gray-400">v1.0.1</span>
         </div>
 
     </div>
@@ -167,7 +212,12 @@
         const italicButton = document.getElementById('italic-button');
         const underlineButton = document.getElementById('underline-button');
         
-        // WOL 사이트 열기 버튼 참조 (새로 추가)
+        // 구조 포맷팅 버튼 참조
+        const titleButton = document.getElementById('title-button');
+        const headingButton = document.getElementById('heading-button');
+        const subheadingButton = document.getElementById('subheading-button');
+
+        // WOL 사이트 열기 버튼 참조
         const openSiteButton = document.getElementById('open-site-button');
 
         const apiKey = "" 
@@ -197,50 +247,67 @@
         // --- Conversion Functions ---
 
         /**
-         * Raw Text (e.g., **bold**, *italic*, <u>underline</u>) to HTML (<strong>, <em>, <u>) for rendering.
+         * Raw Text (Markdown: #, ##, **, *)을 HTML (<h1>, <h2>, <strong>, <em>)로 변환합니다.
+         * 이 함수는 히스토리 상태를 출력 영역에 렌더링할 때 사용됩니다.
          */
         function toRenderableHTML(rawText) {
             if (!rawText) return '';
             let html = rawText;
             
-            // Convert Markdown to HTML for rendering (gs flags for multiline and global matching)
+            // 1. Markdown Headers를 HTML 태그로 변환합니다.
+            // g(전역), m(줄 시작/끝 일치) 플래그 사용
+            // ^#\s([^\n]+) : 줄 시작의 #, 공백, 그리고 줄 끝까지의 텍스트를 캡처합니다.
+            html = html.replace(/^#\s([^\n]+)/gm, '<h1>$1</h1>');
+            html = html.replace(/^##\s([^\n]+)/gm, '<h2>$1</h2>');
+            html = html.replace(/^###\s([^\n]+)/gm, '<h3>$1</h3>');
+            
+            // 2. Inline Markdown을 HTML로 변환합니다.
             html = html.replace(/\*\*(.+?)\*\*/gs, '<strong>$1</strong>'); // Bold
             html = html.replace(/\*(.+?)\*/gs, '<em>$1</em>');       // Italic
 
-            // Convert raw line breaks to HTML line breaks for rendering
+            // 3. Raw line breaks를 HTML line breaks로 변환합니다. (Header 변환 후 실행)
             html = html.replace(/\n/g, '<br>');
             
             return html;
         }
 
         /**
-         * HTML Content (from editor) back to Raw Text (with **, *, <u>) for history/copying.
+         * HTML Content (editor)를 Markdown/Raw Text (#, ##, **, *)로 변환합니다.
+         * 이 함수는 히스토리 상태 저장 및 메모장 복사 시 사용됩니다.
          */
         function toRawText(htmlContent) {
             if (!htmlContent) return '';
             let raw = htmlContent;
             
-            // 1. HTML -> Raw Tag Conversion
+            // 1. 임시 div를 사용하여 HTML 엔티티 등을 처리하고 내부 텍스트를 가져옵니다.
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = raw;
             raw = tempDiv.innerHTML;
 
-            // Restore Markdown tags from HTML rendering
+            // Normalize line breaks: replace <br> with \n before handling block elements
+            raw = raw.replace(/<br[^>]*>/gis, '\n'); 
+
+            // A. Block Element Conversion (H1, H2, H3 to Markdown Headers)
+            // \n\n을 추가하여 헤더 앞뒤에 빈 줄을 만들어 가독성을 높입니다.
+            // (.*?)는 캡처 그룹 $1 입니다.
+            raw = raw.replace(/<h1[^>]*>(.*?)<\/h1>/gis, '\n\n# $1\n\n'); // Title -> # 
+            raw = raw.replace(/<h2[^>]*>(.*?)<\/h2>/gis, '\n\n## $1\n\n'); // Heading -> ## 
+            raw = raw.replace(/<h3[^>]*>(.*?)<\/h3>/gis, '\n\n### $1\n\n'); // Subheading -> ### 
+            
+            // B. Inline Element Conversion (Bold, Italic)
             raw = raw.replace(/<strong[^>]*>(.*?)<\/strong>/gis, '**$1**');
             raw = raw.replace(/<b[^>]*>(.*?)<\/b>/gis, '**$1**'); 
-
             raw = raw.replace(/<em[^>]*>(.*?)<\/em>/gis, '*$1*');
             raw = raw.replace(/<i[^>]*>(.*?)<\/i>/gis, '*$1*'); 
 
-            // Restore <u> tags (for underline)
-            raw = raw.replace(/<u[^>]*>(.*?)<\/u>/gis, '<u>$1</u>'); 
-
-            // 2. HTML Structure -> Line Break Conversion
-            // Convert <br> and block elements (div, p) to \n
-            raw = raw.replace(/<br[^>]*>/gis, '\n')
-                     .replace(/<div[^>]*>(.*?)<\/div>/gis, '$1\n') 
-                     .replace(/<p[^>]*>(.*?)<\/p>/gis, '$1\n')     
-                     .replace(/<[^>]+>/g, '')  // Remove any remaining HTML tags (safeguard)
+            // C. Line Break and Cleanup
+            // P/DIV 태그를 줄바꿈으로 처리합니다.
+            raw = raw.replace(/<div[^>]*>(.*?)<\/div>/gis, '$1\n') 
+                     .replace(/<p[^>]*>(.*?)<\/p>/gis, '$1\n')
+                     // 마지막에 모든 HTML 태그(<u> 포함)를 제거하여 순수 텍스트를 만듭니다.
+                     .replace(/<[^>]+>/g, '')  
+                     // 빈 줄이 너무 많으면 두 줄 이상을 한 줄로 압축합니다.
+                     .replace(/\n\s*\n\s*\n/g, '\n\n') 
                      .trim();
             
             return raw; 
@@ -252,6 +319,7 @@
         function saveState() {
             if (isRestoring) return;
 
+            // HTML 컨텐츠를 Raw Text(마크다운 형태)로 변환하여 저장합니다.
             const currentStateRaw = toRawText(editingTarget.innerHTML);
             const lastState = historyStack[historyIndex];
 
@@ -286,10 +354,12 @@
             if (historyIndex > 0) {
                 isRestoring = true;
                 historyIndex--;
+                // 저장된 Raw Text(마크다운)를 HTML로 변환하여 출력 영역에 표시합니다.
                 editingTarget.innerHTML = toRenderableHTML(historyStack[historyIndex]);
                 isRestoring = false;
                 updateHistoryButtons();
                 updateCopyButtonStatus(historyStack[historyIndex]);
+                // 포커스를 이동하여 커서 위치를 재설정합니다.
                 editingTarget.focus();
             }
         }
@@ -301,10 +371,12 @@
             if (historyIndex < historyStack.length - 1) {
                 isRestoring = true;
                 historyIndex++;
+                // 저장된 Raw Text(마크다운)를 HTML로 변환하여 출력 영역에 표시합니다.
                 editingTarget.innerHTML = toRenderableHTML(historyStack[historyIndex]);
                 isRestoring = false;
                 updateHistoryButtons();
                 updateCopyButtonStatus(historyStack[historyIndex]);
+                // 포커스를 이동하여 커서 위치를 재설정합니다.
                 editingTarget.focus();
             }
         }
@@ -350,17 +422,15 @@
             return rawText.trim();
         }
         
-        // --- Button Handlers ---
+        // --- Core Processing Function ---
 
         /**
-         * "추가 및 정리하기" 버튼 클릭을 처리합니다.
-         * 입력 텍스트를 정리하고 출력 텍스트에 추가한 후, 입력 텍스트를 지웁니다.
+         * 입력 텍스트를 정리하고 출력 텍스트에 추가하는 핵심 로직입니다.
          */
-        function handleProcessButtonClick() {
+        function processAndAppend() {
             const inputRaw = inputTextarea.value.trim();
             
             if (!inputRaw) {
-                // 입력 내용이 없으면 아무것도 하지 않습니다.
                 return;
             }
 
@@ -395,6 +465,7 @@
          * 출력 텍스트 상태(Raw Text 기준)에 따라 복사 버튼을 활성화/비활성화합니다.
          */
         function updateCopyButtonStatus(text) {
+             // toRawText로 변환된 내용(마크다운 포함)을 기반으로 체크
              if (text.trim().length > 0) {
                 copyButton.disabled = false;
             } else {
@@ -415,8 +486,17 @@
         }
 
         /**
+         * 출력 텍스트 영역의 선택된 텍스트에 블록 포맷(제목, 머리말 등)을 적용합니다.
+         */
+        function applyFormatBlock(tag) {
+            editingTarget.focus();
+            // formatBlock 명령어 사용: 선택된 텍스트를 지정된 블록 요소(예: <h1>, <h2>, <p>)로 감쌉니다.
+            document.execCommand('formatBlock', false, tag);
+            saveState(); 
+        }
+
+        /**
          * 입력 및 출력 영역의 모든 텍스트를 지우고 상태를 초기화합니다.
-         * (히스토리 초기화 로직을 제거하여 Undo가 가능하도록 수정)
          */
         function clearAllText() {
             inputTextarea.value = '';
@@ -433,29 +513,80 @@
         }
 
         /**
-         * 정리된 텍스트를 클립보드에 복사하고 성공 메시지를 표시합니다.
+         * iOS 및 Rich Text 환경을 위해 HTML 서식을 포함하여 복사하는 기능입니다.
+         * 이 함수는 복사 전 HTML 요소에 인라인 스타일을 적용하여 서식 유지력을 높입니다.
          */
         function copyToClipboard() {
             const contentDiv = editingTarget;
-            const textContent = contentDiv.textContent; 
-
-            if (textContent.trim() === "") {
+            
+            // 복사할 내용이 없으면 중단 (Raw Text 기준으로 체크)
+            if (toRawText(contentDiv.innerHTML).trim() === "") {
                 return; 
             }
             
             try {
-                // Rich Text 복사를 위해 contenteditable div의 전체 내용을 선택합니다.
-                const selection = window.getSelection();
+                // 1. 임시 div 생성 (화면 밖으로 숨김)
+                const tempDiv = document.createElement('div');
+                // 현재 화면에 보이는 Rich Text (HTML) 내용을 그대로 복사할 div에 넣습니다.
+                tempDiv.innerHTML = contentDiv.innerHTML; 
+                
+                // --- 핵심 수정: 제목/머리말에 인라인 스타일을 적용하여 iOS 앱에서의 서식 유지력을 높입니다. ---
+                const headings = tempDiv.querySelectorAll('h1, h2, h3, strong, em, u');
+                headings.forEach(element => {
+                    // 기본 글꼴 설정을 위한 기본 스타일
+                    let style = 'font-family: Inter, sans-serif;';
+
+                    if (element.tagName === 'H1') {
+                        // 제목 (H1) 스타일 (30px, 굵기 800)
+                        style += 'font-size: 1.875rem; font-weight: 800; line-height: 1.3; margin-top: 1.5rem; margin-bottom: 0.75rem; border-bottom: 2px solid #374151;';
+                    } else if (element.tagName === 'H2') {
+                        // 머리말 (H2) 스타일 (24px, 굵기 700)
+                        style += 'font-size: 1.5rem; font-weight: 700; line-height: 1.4; margin-top: 1.25rem; margin-bottom: 0.5rem; border-left: 4px solid #4f46e5; padding-left: 0.5rem;';
+                    } else if (element.tagName === 'H3') {
+                        // 부머리말 (H3) 스타일 (20px, 굵기 600)
+                        style += 'font-size: 1.25rem; font-weight: 600; line-height: 1.5; margin-top: 1rem; margin-bottom: 0.25rem; color: #1f2937;';
+                    } else if (element.tagName === 'STRONG' || element.tagName === 'B') {
+                        // 굵게
+                        style += 'font-weight: bold;';
+                    } else if (element.tagName === 'EM' || element.tagName === 'I') {
+                        // 기울임
+                        style += 'font-style: italic;';
+                    } else if (element.tagName === 'U') {
+                        // 밑줄
+                        style += 'text-decoration: underline;';
+                    }
+
+                    // 스타일을 기존 스타일과 병합 (만약 있다면)
+                    element.style.cssText += style;
+                });
+                // ----------------------------------------------------------------------
+
+
+                // Rich Text 복사를 위해 스타일 적용 및 contenteditable 설정
+                tempDiv.style.position = 'absolute';
+                tempDiv.style.left = '-9999px';
+                tempDiv.style.width = '0';
+                tempDiv.style.height = '0';
+                tempDiv.style.overflow = 'hidden';
+                tempDiv.setAttribute('contenteditable', 'true'); 
+                document.body.appendChild(tempDiv);
+                
+                // 2. 임시 div 내용 전체 선택
                 const range = document.createRange();
-                range.selectNodeContents(contentDiv);
+                range.selectNodeContents(tempDiv);
+                const selection = window.getSelection();
                 selection.removeAllRanges();
                 selection.addRange(range);
 
+                // 3. 복사 실행 (클립보드에 Plain Text와 Rich Text 모두 복사됨)
                 document.execCommand('copy');
+                
+                // 4. 정리
                 selection.removeAllRanges();
+                document.body.removeChild(tempDiv);
                 
                 // 성공 메시지 표시
-                messageSpan.textContent = '복사 완료! (클립보드에 저장됨)';
+                messageSpan.textContent = '복사 완료! (iOS/메모장 모두 최적화됨)';
                 messageSpan.classList.remove('opacity-0', 'text-red-600');
                 messageSpan.classList.add('opacity-100', 'text-green-600');
 
@@ -489,15 +620,20 @@
 
         // "WOL 성경 사이트 열기" 버튼에 핸들러 연결
         openSiteButton.addEventListener('click', () => {
-            // '_blank' 대신 'wol_tab'이라는 고정된 창 이름을 사용하여, 
-            // 이미 열려 있는 경우 해당 탭을 재사용합니다.
             window.open('https://wol.jw.org/ko/wol/h/r8/lp-ko', 'wol_tab');
         });
         
-        // "추가 및 정리하기" 버튼에 핸들러 연결
-        processButton.addEventListener('click', handleProcessButtonClick);
+        // "아래에 추가하기" 버튼에 핸들러 연결
+        processButton.addEventListener('click', processAndAppend);
 
-        // 출력 텍스트 영역의 내용이 바뀔 때마다 히스토리와 버튼 상태를 업데이트합니다. (직접 수정, execCommand 등 모든 input에 반응)
+        // --- 붙여넣기(Paste) 감지 및 자동 처리 ---
+        inputTextarea.addEventListener('paste', () => {
+            setTimeout(() => {
+                processAndAppend();
+            }, 50); // 50ms 지연
+        });
+        
+        // 출력 텍스트 영역의 내용이 바뀔 때마다 히스토리와 버튼 상태를 업데이트합니다.
         editingTarget.addEventListener('input', saveState);
         
         // 버튼 클릭 이벤트 연결
@@ -505,9 +641,16 @@
         clearButton.addEventListener('click', clearAllText); 
         undoButton.addEventListener('click', undo);
         redoButton.addEventListener('click', redo);
+
+        // 기본 포맷 버튼
         boldButton.addEventListener('click', () => applyFormat('bold'));
         italicButton.addEventListener('click', () => applyFormat('italic'));
         underlineButton.addEventListener('click', () => applyFormat('underline'));
+
+        // 구조 포맷 버튼
+        titleButton.addEventListener('click', () => applyFormatBlock('<h1>'));
+        headingButton.addEventListener('click', () => applyFormatBlock('<h2>'));
+        subheadingButton.addEventListener('click', () => applyFormatBlock('<h3>'));
 
         // 초기 상태 설정
         initializeState(); 
