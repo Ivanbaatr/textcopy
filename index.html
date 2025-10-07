@@ -27,7 +27,7 @@
             </p>
             <ul class="text-sm text-gray-700 list-disc list-inside ml-2 mt-1">
                 <li>**연속된 '+'** 문자 제거</li>
-                <li>**'신세계역 성경 (연구용)'** 문구를 **')'** 하나로 치환 (주변의 줄 바꿈/공백만 정리)</li>
+                <li>**'신세계역 성경 (연구용)'** 문구를 **')'** 하나로 치환 (주변 공백 정리 및 **치환 후 문자 2개 추가 제거**)</li>
             </ul>
         </div>
         
@@ -78,19 +78,21 @@
             // 1. 연속된 '+' 문자를 제거합니다.
             cleanedText = cleanedText.replace(/\++/g, '');
             
-            // 2. '신세계역 성경 (연구용)' 문구를 찾아 ')' 하나로 치환하고 주변 공백을 제거합니다.
+            // 2. '신세계역 성경 (연구용)' 문구를 찾아 ')' 하나로 치환하고 주변 공백을 제거하며, 그 뒤의 문자 2개를 제거합니다.
             const phraseToTarget = "신세계역 성경 (연구용)";
             
             // 정규식 안전 처리를 위해 문구 이스케이프
             const escapedPhrase = phraseToTarget.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             
-            // 문구 앞뒤의 공백/줄 바꿈 문자(\s, \r, \n)를 포함하여 찾습니다.
-            const phraseRegex = new RegExp(`[\\s\\r\\n]*${escapedPhrase}[\\s\\r\\n]*`, 'g');
+            // 문구 앞뒤의 공백/줄 바꿈 문자(\s, \r, \n)를 포함하고, 그 뒤에 어떠한 문자(줄 바꿈 포함) 2개를 추가로 캡처합니다.
+            // . {2}는 모든 문자 2개를 의미합니다.
+            const phraseRegex = new RegExp(`[\\s\\r\\n]*${escapedPhrase}[\\s\\r\\n]*.{0,2}`, 'g');
             
-            // 해당 문구와 주변 공백을 ')' 문자 하나로 치환합니다.
+            // 해당 패턴을 ')' 문자 하나로 치환합니다.
+            // . {0,2}를 사용하여 문구가 줄의 끝에 있을 경우에도 오류 없이 작동하도록 합니다.
             cleanedText = cleanedText.replace(phraseRegex, ')');
             
-            // 3. 최종적으로 정리된 텍스트의 앞뒤 공백을 제거합니다.
+            // 3. 최종적으로 정리된 텍스트의 앞뒤 공백을 제거합니다. 
             outputTextarea.value = cleanedText.trim(); 
 
             // 출력 텍스트가 비어있으면 복사 버튼을 비활성화합니다.
@@ -128,7 +130,7 @@
                     messageSpan.classList.add('opacity-0');
                     messageSpan.textContent = '';
                     
-                    // --- 추가된 기능: 입력 및 출력 영역 초기화 ---
+                    // --- 복사 후 초기화 기능 ---
                     inputTextarea.value = '';
                     outputTextarea.value = '';
                     copyButton.disabled = true;
