@@ -11,20 +11,27 @@
         :root {
             font-family: 'Inter', sans-serif;
         }
+
+        /* iOS 줌 방지를 위해 입력 영역의 폰트 크기를 명시적으로 16px 이상으로 설정합니다. */
+        #input-text {
+            font-size: 1rem; /* 16px, iOS 줌 방지 핵심 */
+        }
+
         /* contenteditable div를 textarea처럼 보이게 스타일링 */
         #output-text {
             /* 스크롤바 추가를 위해 max-height와 overflow-y 설정 */
             max-height: 360px; /* 요청에 따라 최대 높이를 360px로 조정 (약 2줄 감소) */
             overflow-y: auto; /* 내용이 넘칠 때 스크롤바 표시 */
-
+            
             min-height: 200px;
             white-space: pre-wrap; /* 줄 바꿈 유지 */
             word-wrap: break-word;
             padding: 0.75rem;
-            border: 1px solid #d1d5db;
+            border: 1px solid #d1g-300;
             border-radius: 0.5rem;
             transition: all 150ms ease-in-out;
             font-family: monospace; /* 폰트 고정 */
+            font-size: 1rem; /* 16px, iOS 줌 방지 핵심 */
         }
         /* 시각적 포맷팅을 위한 CSS */
         #output-text u {
@@ -93,18 +100,14 @@
 
             <!-- 라벨 크기: text-sm -> text-base 로 변경 -->
             <label for="input-text" class="block text-base font-medium text-gray-700 mb-2">
-                성구 (여기에 붙여넣으세요) - **붙여넣기 시 자동 정리됩니다.**
+                성구를 붙여넣으면 자동으로 아래에 추가됩니다.
             </label>
             
-            <!-- rows="3"으로 변경됨 -->
-            <textarea id="input-text" rows="3" placeholder="워치타워 온라인 라이브러리에서 성구를 복사하여 여기에 붙여 넣으세요."
+            <!-- rows="1"로 변경됨, placeholder 텍스트 업데이트 -->
+            <textarea id="input-text" rows="1" placeholder="WOL에서 성구를 복사하여 여기에 붙여 넣으세요."
                 class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 shadow-inner"></textarea>
             
-            <!-- 처리 버튼 (붙여넣기 자동화로 인해 이제 수동 처리 또는 입력 후 처리용) -->
-            <button id="process-button"
-                class="w-full mt-3 px-6 py-2 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 transition duration-200 transform hover:scale-[1.01] active:scale-[0.99] disabled:bg-green-300 disabled:cursor-not-allowed">
-                아래에 추가하기 (수동 처리)
-            </button>
+            <!-- 수동 처리 버튼은 제거됨 -->
         </div>
 
         <!-- 2. 결과 영역 -->
@@ -185,7 +188,7 @@
 
         <!-- 4. 버전 표시 영역 (새로 추가됨) -->
         <div class="text-right pt-2">
-            <span class="text-xs text-gray-400">v1.0.5 (iOS Copy Rework)</span>
+            <span class="text-xs text-gray-400">v1.0.9 (iOS Zoom Fix)</span>
         </div>
 
     </div>
@@ -196,7 +199,6 @@
         const outputTextarea = document.getElementById('output-text');
         const copyButton = document.getElementById('copy-button');
         const clearButton = document.getElementById('clear-button'); 
-        const processButton = document.getElementById('process-button'); 
         const messageSpan = document.getElementById('message');
         const undoButton = document.getElementById('undo-button');
         const redoButton = document.getElementById('redo-button');
@@ -219,14 +221,13 @@
         ];
 
         // iOS 서식 유지를 위한 인라인 스타일 매핑 (copyToClipboard에서 사용)
-        // **중요**: H1, H2, H3 스타일은 <p> 태그에 적용되어야 iOS Notes에서 인식됩니다.
         const RICH_TEXT_STYLES = {
             // H1을 폰트 크기와 굵기로 변환 (P 태그용)
-            'H1': 'font-size: 1.5rem; font-weight: 800; line-height: 1.3; margin-top: 1.5rem; margin-bottom: 0.75rem; border-bottom: 2px solid #374151;',
+            'H1': 'font-size: 1.5rem; font-weight: 800; line-height: 1.3; margin-top: 1.5rem; margin-bottom: 0.75rem; border-bottom: 2px solid #374151; display: block; border-left: none; padding-left: 0;',
             // H2를 폰트 크기와 굵기로 변환 (P 태그용)
-            'H2': 'font-size: 1.25rem; font-weight: 700; line-height: 1.4; margin-top: 1.25rem; margin-bottom: 0.5rem; border-left: 4px solid #4f46e5; padding-left: 0.5rem;',
+            'H2': 'font-size: 1.25rem; font-weight: 700; line-height: 1.4; margin-top: 1.25rem; margin-bottom: 0.5rem; border-left: 4px solid #4f46e5; padding-left: 0.5rem; display: block;',
             // H3를 폰트 크기와 굵기로 변환 (P 태그용)
-            'H3': 'font-size: 1.125rem; font-weight: 600; line-height: 1.5; margin-top: 1rem; margin-bottom: 0.25rem; color: #1f2937;',
+            'H3': 'font-size: 1.125rem; font-weight: 600; line-height: 1.5; margin-top: 1rem; margin-bottom: 0.25rem; color: #1f2937; display: block; border-left: none; padding-left: 0;',
             // 인라인 스타일
             'STRONG': 'font-weight: bold;',
             'U': 'text-decoration: underline;',
@@ -400,7 +401,8 @@
             editingTarget.innerHTML = toRenderableHTML(newOutputRaw);
             editingTarget.scrollTop = editingTarget.scrollHeight; 
 
-            inputTextarea.value = '';
+            // 처리 후 입력창 비우기 (자동 처리 완료)
+            inputTextarea.value = ''; 
             saveState(); 
         }
 
@@ -529,13 +531,13 @@
         openSiteButton.addEventListener('click', () => {
             window.open('https://wol.jw.org/ko/wol/h/r8/lp-ko', 'wol_tab');
         });
-        processButton.addEventListener('click', processAndAppend);
+        
         copyButton.addEventListener('click', copyToClipboard);
         clearButton.addEventListener('click', clearAllText); 
         undoButton.addEventListener('click', undo);
         redoButton.addEventListener('click', redo);
 
-        // 붙여넣기(Paste) 감지 및 자동 처리
+        // 붙여넣기(Paste) 감지 및 자동 처리 (수동 버튼 제거로 인해 핵심 기능이 됨)
         inputTextarea.addEventListener('paste', () => {
             setTimeout(processAndAppend, 50); 
         });
@@ -556,7 +558,7 @@
             document.getElementById(id).addEventListener('click', () => applyFormatBlock(tag));
         });
 
-        // 기본 포맷 (Bold, Underline) - Italic 제거됨
+        // 기본 포맷 (Bold, Underline)
         const basicFormatMap = {
             'bold-button': 'bold',
             'underline-button': 'underline',
