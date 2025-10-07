@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WOL 성구 복사기</title>
+    <title>공강 필기 도우미</title>
     <!-- Tailwind CSS 로드 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -11,64 +11,164 @@
         :root {
             font-family: 'Inter', sans-serif;
         }
+        /* contenteditable div를 textarea처럼 보이게 스타일링 */
+        #output-text {
+            /* 스크롤바 추가를 위해 max-height와 overflow-y 설정 */
+            max-height: 400px; /* 최대 높이를 400px로 설정 */
+            overflow-y: auto; /* 내용이 넘칠 때 스크롤바 표시 */
+
+            min-height: 200px;
+            white-space: pre-wrap; /* 줄 바꿈 유지 */
+            word-wrap: break-word;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            transition: all 150ms ease-in-out;
+            font-family: monospace; /* 폰트 고정 */
+        }
+        /* 시각적 포맷팅을 위한 CSS */
+        #output-text u {
+            text-decoration: underline;
+        }
+        #output-text strong {
+            font-weight: 700; /* Bold */
+        }
+        #output-text em {
+            font-style: italic;
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen p-4 flex items-center justify-center">
 
     <div id="app" class="bg-white p-6 md:p-8 rounded-xl shadow-2xl w-full max-w-lg space-y-6">
-        <h1 class="text-3xl font-extrabold text-gray-900 text-center border-b pb-3 mb-4">
-            WOL 성구 복사기
+        <h1 class="3xl font-extrabold text-gray-900 text-center border-b pb-3 mb-4">
+            공강 필기 도우미
         </h1>
         
-        <!-- 고정된 규칙 안내 -->
+        <!-- 고정된 규칙 안내 (숨김 유지) -->
+        <!-- WOL 성경 사이트와 관련된 특별한 정리 규칙은 여전히 작동합니다. -->
         <div class="p-3 bg-red-50 border-l-4 border-red-500 rounded-lg shadow-sm hidden">
             <p class="text-sm font-semibold text-red-700">
-                자동 제거 및 치환 규칙:
+                자동 제거 및 치환 규칙 (WOL 성경 텍스트에 최적화):
             </p>
             <ul class="text-sm text-gray-700 list-disc list-inside ml-2 mt-1">
                 <li>**연속된 '+'** 문자 제거</li>
                 <li>**'신세계역 성경 (연구용)'** 문구를 **')'** 하나로 치환 (주변 공백 정리 및 **치환 후 문자 2개 추가 제거**)</li>
                 <li>**"숫자, 공백, 숫자"** 패턴에서 공백 제거 (예: `1, 234` → `1,234`)</li>
                 <li>**줄 시작에 오는 성경 책 이름 앞**에 **'('** 삽입</li>
+                <li>**단일 별표('*')** 제거 (원치 않는 기울임꼴 변환 방지)</li>
             </ul>
         </div>
         
         <!-- 1. 입력 영역 -->
         <div>
+            <!-- WOL 사이트 열기 버튼 (새로 추가) -->
+            <button id="open-site-button"
+                class="w-full mb-4 px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition duration-200 transform hover:scale-[1.01] active:scale-[0.99]">
+                WOL 검색창 열기 (검색 후 내용 복사)
+            </button>
+
             <label for="input-text" class="block text-sm font-medium text-gray-700 mb-2">
-                원본 텍스트 (여기에 붙여넣으세요)
+                성구 (여기에 붙여넣으세요)
             </label>
-            <textarea id="input-text" rows="8" placeholder="여기에 텍스트를 붙여넣으면 자동으로 정리됩니다."
+            
+            <textarea id="input-text" rows="8" placeholder="워치타워 온라인 라이브러리에서 성구를 복사하여 여기에 붙여 넣으세요."
                 class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 shadow-inner"></textarea>
+            
+            <!-- 처리 버튼 -->
+            <button id="process-button"
+                class="w-full mt-3 px-6 py-2 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 transition duration-200 transform hover:scale-[1.01] active:scale-[0.99] disabled:bg-green-300 disabled:cursor-not-allowed">
+                추가 및 정리하기 (결과 영역 마지막에 추가)
+            </button>
         </div>
 
         <!-- 2. 결과 영역 -->
-        <div>
+        <div class="mt-6">
             <label for="output-text" class="block text-sm font-medium text-gray-700 mb-2">
-                정리된 텍스트
+                필기창
             </label>
-            <textarea id="output-text" rows="8" readonly
-                class="w-full p-3 border border-gray-300 bg-gray-50 rounded-lg text-gray-800 transition duration-150 font-mono"></textarea>
+            
+            <!-- 편집기 컨트롤 -->
+            <div class="flex space-x-2 mb-2 p-2 bg-gray-100 rounded-lg shadow-inner border border-gray-200">
+                <!-- 실행 취소 버튼 (더 큰 화살표 아이콘 사용) -->
+                <button id="undo-button" title="실행 취소" disabled
+                    class="p-1.5 rounded-md text-gray-600 hover:bg-gray-200 transition duration-150 disabled:text-gray-400 disabled:cursor-not-allowed">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3"/>
+                    </svg>
+                </button>
+                <!-- 다시 실행 버튼 (더 큰 화살표 아이콘 사용) -->
+                <button id="redo-button" title="다시 실행" disabled
+                    class="p-1.5 rounded-md text-gray-600 hover:bg-gray-200 transition duration-150 disabled:text-gray-400 disabled:cursor-not-allowed">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 9l6 6m0 0l-6 6m6-6H9a6 6 0 010-12h3"/>
+                    </svg>
+                </button>
+                <span class="border-l border-gray-300 mx-1"></span>
+                <button id="bold-button" title="굵게 (**텍스트**)"
+                    class="p-1.5 rounded-md font-bold text-gray-600 hover:bg-gray-200 transition duration-150">
+                    B
+                </button>
+                <button id="italic-button" title="기울임 (*텍스트*)"
+                    class="p-1.5 rounded-md italic text-gray-600 hover:bg-gray-200 transition duration-150">
+                    I
+                </button>
+                <button id="underline-button" title="밑줄 (<u>텍스트</u>)"
+                    class="p-1.5 rounded-md underline text-gray-600 hover:bg-gray-200 transition duration-150 font-semibold">
+                    U
+                </button>
+            </div>
+            
+            <!-- contenteditable div -->
+            <div id="output-text" contenteditable="true" 
+                class="w-full border border-gray-300 rounded-lg text-gray-800 transition duration-150 shadow-inner">
+            </div>
         </div>
 
         <!-- 3. 버튼 및 메시지 영역 -->
-        <div class="flex flex-col sm:flex-row sm:justify-between items-center gap-4 pt-2">
-            <button id="copy-button"
-                class="w-full sm:w-auto px-6 py-3 bg-indigo-600 text-white font-semibold rounded-full shadow-lg hover:bg-indigo-700 transition duration-200 transform hover:scale-105 active:scale-95 disabled:bg-indigo-300 disabled:cursor-not-allowed">
-                정리하고 복사하기
-            </button>
-            <span id="message" class="text-sm font-medium text-green-600 opacity-0 transition duration-300"></span>
+        <div class="pt-2 space-y-3">
+            <div class="flex flex-col sm:flex-row gap-4">
+                <!-- 모두 지우기 버튼 -->
+                <button id="clear-button"
+                    class="w-full sm:flex-1 px-6 py-3 border border-gray-300 bg-gray-50 text-gray-700 font-semibold rounded-full shadow-md hover:bg-gray-100 transition duration-200 transform hover:scale-105 active:scale-95">
+                    모두 지우기
+                </button>
+                <!-- 복사하기 버튼 -->
+                <button id="copy-button"
+                    class="w-full sm:flex-1 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-full shadow-lg hover:bg-indigo-700 transition duration-200 transform hover:scale-105 active:scale-95 disabled:bg-indigo-300 disabled:cursor-not-allowed">
+                    복사하기
+                </button>
+            </div>
+            <span id="message" class="block text-center text-sm font-medium text-green-600 opacity-0 transition duration-300"></span>
         </div>
+
+        <!-- 4. 버전 표시 영역 (새로 추가됨) -->
+        <div class="text-right pt-2">
+            <span class="text-xs text-gray-400">v1.0.4</span>
+        </div>
+
     </div>
 
     <script>
         // DOM 요소 참조
         const inputTextarea = document.getElementById('input-text');
-        const outputTextarea = document.getElementById('output-text');
+        const outputTextarea = document.getElementById('output-text'); // 이제 div
         const copyButton = document.getElementById('copy-button');
+        const clearButton = document.getElementById('clear-button'); 
+        const processButton = document.getElementById('process-button'); 
         const messageSpan = document.getElementById('message');
         
-        const apiKey = "" // API 키를 여기에 넣을 수 있습니다. 현재는 사용하지 않습니다.
+        // 편집기 컨트롤 버튼 참조
+        const undoButton = document.getElementById('undo-button');
+        const redoButton = document.getElementById('redo-button');
+        const boldButton = document.getElementById('bold-button');
+        const italicButton = document.getElementById('italic-button');
+        const underlineButton = document.getElementById('underline-button');
+        
+        // WOL 사이트 열기 버튼 참조 (새로 추가)
+        const openSiteButton = document.getElementById('open-site-button');
+
+        const apiKey = "" 
 
         // 성경의 책 이름 전체 목록 (정규식 생성을 위해 배열로 저장)
         const BIBLE_BOOKS = [
@@ -81,85 +181,291 @@
             '빌립보서', '골로새서', '데살로니가 전서', '데살로니가 후서', '디모데 전서', '디모데 후서', 
             '디도서', '빌레몬서', '히브리서', '야고보서', '베드로 전서', '베드로 후서', 
             '요한 1서', '요한 2서', '요한 3서', '유다서', '요한 계시록'
-        ].sort((a, b) => b.length - a.length); // 길이가 긴 단어를 먼저 처리하도록 정렬합니다.
+        ].sort((a, b) => b.length - a.length);
 
+
+        // --- 텍스트 편집기 (Undo/Redo) 상태 관리 ---
+        const MAX_HISTORY_SIZE = 50;
+        let historyStack = ['']; 
+        let historyIndex = 0;
+        let isRestoring = false;
+        
+        const editingTarget = outputTextarea;
+
+        // --- Conversion Functions ---
 
         /**
-         * 텍스트에서 고정된 규칙을 적용하여 정리합니다.
+         * Raw Text (e.g., **bold**, *italic*, <u>underline</u>) to HTML (<strong>, <em>, <u>) for rendering.
          */
-        function cleanText() {
-            let cleanedText = inputTextarea.value;
+        function toRenderableHTML(rawText) {
+            if (!rawText) return '';
+            let html = rawText;
             
+            // Convert Markdown to HTML for rendering (gs flags for multiline and global matching)
+            html = html.replace(/\*\*(.+?)\*\*/gs, '<strong>$1</strong>'); // Bold
+            html = html.replace(/\*(.+?)\*/gs, '<em>$1</em>');       // Italic
+
+            // Convert raw line breaks to HTML line breaks for rendering
+            html = html.replace(/\n/g, '<br>');
+            
+            return html;
+        }
+
+        /**
+         * HTML Content (from editor) back to Raw Text (with **, *, <u>) for history/copying.
+         */
+        function toRawText(htmlContent) {
+            if (!htmlContent) return '';
+            let raw = htmlContent;
+            
+            // 1. HTML -> Raw Tag Conversion
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = raw;
+            raw = tempDiv.innerHTML;
+
+            // Restore Markdown tags from HTML rendering
+            raw = raw.replace(/<strong[^>]*>(.*?)<\/strong>/gis, '**$1**');
+            raw = raw.replace(/<b[^>]*>(.*?)<\/b>/gis, '**$1**'); 
+
+            raw = raw.replace(/<em[^>]*>(.*?)<\/em>/gis, '*$1*');
+            raw = raw.replace(/<i[^>]*>(.*?)<\/i>/gis, '*$1*'); 
+
+            // Restore <u> tags (for underline)
+            raw = raw.replace(/<u[^>]*>(.*?)<\/u>/gis, '<u>$1</u>'); 
+
+            // 2. HTML Structure -> Line Break Conversion
+            // Convert <br> and block elements (div, p) to \n
+            raw = raw.replace(/<br[^>]*>/gis, '\n')
+                     .replace(/<div[^>]*>(.*?)<\/div>/gis, '$1\n') 
+                     .replace(/<p[^>]*>(.*?)<\/p>/gis, '$1\n')     
+                     // .replace(/\n\s*\n/g, '\n') // 연속된 두 개 이상의 줄바꿈을 하나로 축소하는 로직 (주석 처리: 이로 인해 \n\n이 \n으로 변환되어 줄바꿈이 지워지는 문제가 발생하여 주석 처리함)
+                     .replace(/<[^>]+>/g, '')  // Remove any remaining HTML tags (safeguard)
+                     .trim();
+            
+            return raw; 
+        }
+
+        /**
+         * 현재 텍스트 상태를 기록 스택에 저장합니다.
+         */
+        function saveState() {
+            if (isRestoring) return;
+
+            const currentStateRaw = toRawText(editingTarget.innerHTML);
+            const lastState = historyStack[historyIndex];
+
+            if (currentStateRaw !== lastState) {
+                if (historyIndex < historyStack.length - 1) {
+                    historyStack = historyStack.slice(0, historyIndex + 1);
+                }
+
+                if (historyStack.length >= MAX_HISTORY_SIZE) {
+                    historyStack.shift(); 
+                } else {
+                    historyIndex++;
+                }
+                historyStack[historyIndex] = currentStateRaw;
+            }
+            updateHistoryButtons();
+            updateCopyButtonStatus(currentStateRaw);
+        }
+        
+        /**
+         * Undo/Redo 버튼의 활성화 상태를 업데이트합니다.
+         */
+        function updateHistoryButtons() {
+            undoButton.disabled = historyIndex === 0;
+            redoButton.disabled = historyIndex === historyStack.length - 1;
+        }
+
+        /**
+         * 이전 상태로 되돌립니다.
+         */
+        function undo() {
+            if (historyIndex > 0) {
+                isRestoring = true;
+                historyIndex--;
+                editingTarget.innerHTML = toRenderableHTML(historyStack[historyIndex]);
+                isRestoring = false;
+                updateHistoryButtons();
+                updateCopyButtonStatus(historyStack[historyIndex]);
+                editingTarget.focus();
+            }
+        }
+
+        /**
+         * 다음 상태로 다시 실행합니다.
+         */
+        function redo() {
+            if (historyIndex < historyStack.length - 1) {
+                isRestoring = true;
+                historyIndex++;
+                editingTarget.innerHTML = toRenderableHTML(historyStack[historyIndex]);
+                isRestoring = false;
+                updateHistoryButtons();
+                updateCopyButtonStatus(historyStack[historyIndex]);
+                editingTarget.focus();
+            }
+        }
+
+        // --- Core Cleaning Logic ---
+
+        /**
+         * 입력된 Raw Text에 고정된 규칙을 적용하여 정리된 문자열을 반환합니다.
+         * @param {string} rawText - 정리할 원본 텍스트
+         * @returns {string} 정리된 텍스트
+         */
+        function applyCleaningRules(rawText) {
+            if (!rawText) return '';
+
             // 1. 연속된 '+' 문자를 제거합니다.
-            cleanedText = cleanedText.replace(/\++/g, '');
+            rawText = rawText.replace(/\++/g, '');
             
             // 2. '신세계역 성경 (연구용)' 문구를 찾아 ')' 하나로 치환하고 주변 공백을 제거하며, 그 뒤의 문자 2개를 제거합니다.
             const phraseToTarget = "신세계역 성경 (연구용)";
             const escapedPhrase = phraseToTarget.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             const phraseRegex = new RegExp(`[\\s\\r\\n]*${escapedPhrase}[\\s\\r\\n]*.{0,2}`, 'g');
-            cleanedText = cleanedText.replace(phraseRegex, ')');
+            rawText = rawText.replace(phraseRegex, ')');
 
             // 3. 숫자, 쉼표, 공백, 숫자 패턴에서 공백을 제거합니다. (예: 1, 000 -> 1,000)
-            cleanedText = cleanedText.replace(/(\d+),\s+(\d+)/g, '$1,$2');
+            rawText = rawText.replace(/(\d+),\s+(\d+)/g, '$1,$2');
             
-            // 4. (NEW RULE) 줄 바꿈 문자(\n) 바로 뒤에 성경 책 이름이 오면 그 앞에 '('를 삽입합니다.
-            // 정규식 생성: (\n)(책이름1|책이름2|...)
-            const bookNamesRegex = BIBLE_BOOKS.map(name => name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
-            // (\n)은 첫 번째 캡처 그룹($1), 성경 책 이름은 두 번째 캡처 그룹($2)입니다.
-            const bookRegex = new RegExp(`(\\n)(${bookNamesRegex})`, 'g');
-            
-            // 치환: 줄 바꿈 문자, 여는 괄호, 책 이름 ($1, '(', $2)
-            cleanedText = cleanedText.replace(bookRegex, '$1($2');
+            const BIBLE_BOOKS_REGEX_STRING = BIBLE_BOOKS.map(name => name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+
+            // 4. 줄 바꿈 문자(\n) 바로 뒤에 성경 책 이름이 오면 그 앞에 '('를 삽입합니다.
+            const bookRegex = new RegExp(`(\\n)(${BIBLE_BOOKS_REGEX_STRING})`, 'g');
+            rawText = rawText.replace(bookRegex, '$1($2');
 
             // 5. 텍스트가 '창세기' 등으로 시작하는 경우 (맨 첫 줄)에도 괄호를 추가합니다.
-            const firstBookRegex = new RegExp(`^(${bookNamesRegex})`);
-            cleanedText = cleanedText.replace(firstBookRegex, '($1');
+            const firstBookRegex = new RegExp(`^(${BIBLE_BOOKS_REGEX_STRING})`);
+            rawText = rawText.replace(firstBookRegex, '($1');
 
+            // 6. WOL 텍스트에서 불필요한 단일 별표 문자('*')를 제거하여 원치 않는 기울임꼴 변환을 방지합니다.
+            // a) **를 임시 치환하여 보존합니다.
+            let cleanedText = rawText.replace(/\*\*/g, '@@@BOLD_TEMP@@@');
+            
+            // b) 남은 모든 단일 *를 제거합니다.
+            cleanedText = cleanedText.replace(/\*/g, '');
 
-            // 6. 최종적으로 정리된 텍스트의 앞뒤 공백을 제거합니다. 
-            outputTextarea.value = cleanedText.trim(); 
+            // c) 임시 치환된 @@BOLD_TEMP@@를 다시 **로 복원합니다.
+            rawText = cleanedText.replace(/@@@BOLD_TEMP@@@/g, '**');
 
-            // 출력 텍스트 상태에 따라 복사 버튼을 활성화/비활성화합니다.
-            if (cleanedText.trim().length > 0) {
+            return rawText.trim();
+        }
+        
+        // --- Button Handlers ---
+
+        /**
+         * "추가 및 정리하기" 버튼 클릭을 처리합니다.
+         * 입력 텍스트를 정리하고 출력 텍스트에 추가한 후, 입력 텍스트를 지웁니다.
+         */
+        function handleProcessButtonClick() {
+            const inputRaw = inputTextarea.value.trim();
+            
+            if (!inputRaw) {
+                // 입력 내용이 없으면 아무것도 하지 않습니다.
+                return;
+            }
+
+            // 1. 입력 텍스트 정리
+            const cleanedRawText = applyCleaningRules(inputRaw);
+
+            // 2. 현재 출력 텍스트 가져오기 (Raw Text 형태)
+            let currentOutputRaw = toRawText(editingTarget.innerHTML);
+            
+            // 3. 정리된 텍스트를 현재 출력 텍스트의 마지막에 추가합니다.
+            let newOutputRaw = currentOutputRaw;
+            
+            // 기존 내용이 있으면 줄바꿈 두 개(\n\n)를 추가하여 빈 줄을 만듭니다.
+            if (newOutputRaw.length > 0) {
+                newOutputRaw += '\n\n' + cleanedRawText; 
+            } else {
+                newOutputRaw = cleanedRawText;
+            }
+
+            // 4. 출력 영역 업데이트 및 스크롤 (가장 최근 내용이 보이도록 스크롤합니다)
+            editingTarget.innerHTML = toRenderableHTML(newOutputRaw);
+            editingTarget.scrollTop = editingTarget.scrollHeight; // 맨 아래로 스크롤
+
+            // 5. 입력 영역 지우기
+            inputTextarea.value = '';
+
+            // 6. 히스토리 저장
+            saveState(); 
+        }
+
+        /**
+         * 출력 텍스트 상태(Raw Text 기준)에 따라 복사 버튼을 활성화/비활성화합니다.
+         */
+        function updateCopyButtonStatus(text) {
+             if (text.trim().length > 0) {
                 copyButton.disabled = false;
             } else {
                 copyButton.disabled = true;
             }
         }
 
+
+        // --- 텍스트 포맷팅 로직 (Output에 적용) ---
+
+        /**
+         * 출력 텍스트 영역의 선택된 텍스트에 포맷을 적용합니다 (execCommand 사용).
+         */
+        function applyFormat(command) {
+            editingTarget.focus();
+            document.execCommand(command, false, null);
+            saveState(); 
+        }
+
+        /**
+         * 입력 및 출력 영역의 모든 텍스트를 지우고 상태를 초기화합니다.
+         * (히스토리 초기화 로직을 제거하여 Undo가 가능하도록 수정)
+         */
+        function clearAllText() {
+            inputTextarea.value = '';
+            // 출력 영역만 비웁니다.
+            editingTarget.innerHTML = '';
+            
+            // 비어있는 상태를 히스토리에 저장하여, Undo 버튼을 누르면 직전 상태로 복구 가능하도록 합니다.
+            saveState(); 
+            
+            // 메시지 숨기기
+            messageSpan.classList.remove('opacity-100');
+            messageSpan.classList.add('opacity-0');
+            messageSpan.textContent = '';
+        }
+
         /**
          * 정리된 텍스트를 클립보드에 복사하고 성공 메시지를 표시합니다.
          */
         function copyToClipboard() {
-            const textToCopy = outputTextarea.value;
+            const contentDiv = editingTarget;
+            const textContent = contentDiv.textContent; 
 
-            if (textToCopy.trim() === "") {
-                return; // 텍스트가 없으면 복사하지 않습니다.
+            if (textContent.trim() === "") {
+                return; 
             }
             
             try {
-                // 텍스트를 클립보드에 복사합니다.
-                outputTextarea.select();
-                outputTextarea.setSelectionRange(0, 99999); 
+                // Rich Text 복사를 위해 contenteditable div의 전체 내용을 선택합니다.
+                const selection = window.getSelection();
+                const range = document.createRange();
+                range.selectNodeContents(contentDiv);
+                selection.removeAllRanges();
+                selection.addRange(range);
+
                 document.execCommand('copy');
+                selection.removeAllRanges();
                 
                 // 성공 메시지 표시
                 messageSpan.textContent = '복사 완료! (클립보드에 저장됨)';
                 messageSpan.classList.remove('opacity-0', 'text-red-600');
                 messageSpan.classList.add('opacity-100', 'text-green-600');
 
-                // 2초 후 메시지 숨기기 및 초기화
                 setTimeout(() => {
                     messageSpan.classList.remove('opacity-100');
                     messageSpan.classList.add('opacity-0');
                     messageSpan.textContent = '';
-                    
-                    // --- 복사 후 초기화 기능 ---
-                    inputTextarea.value = '';
-                    outputTextarea.value = '';
-                    copyButton.disabled = true;
-                    // ----------------------------------------
-
                 }, 2000);
 
             } catch (err) {
@@ -170,17 +476,44 @@
             }
         }
 
+        /**
+         * 애플리케이션의 초기 상태를 설정합니다.
+         */
+        function initializeState() {
+            inputTextarea.value = '';
+            editingTarget.innerHTML = '';
+            historyStack = [''];
+            historyIndex = 0;
+            updateHistoryButtons();
+            updateCopyButtonStatus('');
+        }
+
         // --- 이벤트 리스너 설정 ---
 
-        // 입력 텍스트 영역에 내용이 바뀔 때마다 텍스트를 정리합니다.
-        inputTextarea.addEventListener('input', cleanText);
+        // "WOL 성경 사이트 열기" 버튼에 핸들러 연결
+        openSiteButton.addEventListener('click', () => {
+            // '_blank' 대신 'wol_tab'이라는 고정된 창 이름을 사용하여, 
+            // 이미 열려 있는 경우 해당 탭을 재사용합니다.
+            window.open('https://wol.jw.org/ko/wol/h/r8/lp-ko', 'wol_tab');
+        });
+        
+        // "추가 및 정리하기" 버튼에 핸들러 연결
+        processButton.addEventListener('click', handleProcessButtonClick);
 
-        // 버튼 클릭 시 텍스트를 복사합니다.
+        // 출력 텍스트 영역의 내용이 바뀔 때마다 히스토리와 버튼 상태를 업데이트합니다. (직접 수정, execCommand 등 모든 input에 반응)
+        editingTarget.addEventListener('input', saveState);
+        
+        // 버튼 클릭 이벤트 연결
         copyButton.addEventListener('click', copyToClipboard);
+        clearButton.addEventListener('click', clearAllText); 
+        undoButton.addEventListener('click', undo);
+        redoButton.addEventListener('click', redo);
+        boldButton.addEventListener('click', () => applyFormat('bold'));
+        italicButton.addEventListener('click', () => applyFormat('italic'));
+        underlineButton.addEventListener('click', () => applyFormat('underline'));
 
         // 초기 상태 설정
-        copyButton.disabled = true; 
-        cleanText(); 
+        initializeState(); 
 
     </script>
 </body>
