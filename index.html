@@ -185,7 +185,7 @@
 
         <!-- 4. 버전 표시 영역 (새로 추가됨) -->
         <div class="text-right pt-2">
-            <span class="text-xs text-gray-400">v1.0.3 (Max-height adjusted)</span>
+            <span class="text-xs text-gray-400">v1.0.4 (iOS Copy Fix)</span>
         </div>
 
     </div>
@@ -430,6 +430,9 @@
             messageSpan.textContent = '';
         }
 
+        /**
+         * @description iOS/iPadOS에서 서식이 유지된 Rich Text 복사를 위해 모든 서식을 인라인 스타일로 변환하여 클립보드에 복사합니다.
+         */
         function copyToClipboard() {
             const contentDiv = editingTarget;
             
@@ -438,30 +441,39 @@
             }
             
             try {
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = contentDiv.innerHTML; 
-                
-                // --- 인라인 스타일 적용 로직 ---
-                const headings = tempDiv.querySelectorAll('h1, h2, h3, strong, u, b');
-                headings.forEach(element => {
-                    let style = 'font-family: Inter, sans-serif;';
-                    const tag = element.tagName;
-
-                    if (RICH_TEXT_STYLES[tag]) {
-                        style += RICH_TEXT_STYLES[tag];
-                    }
-                    element.style.cssText += style;
-                });
-                // ------------------------------------
-
+                // 1. 컨텐츠를 복제하고 임시 편집 가능 Div에 넣습니다. (iOS 복사 필수 조건)
+                const tempDiv = contentDiv.cloneNode(true);
                 tempDiv.style.position = 'absolute';
                 tempDiv.style.left = '-9999px';
                 tempDiv.style.width = '0';
                 tempDiv.style.height = '0';
                 tempDiv.style.overflow = 'hidden';
                 tempDiv.setAttribute('contenteditable', 'true'); 
+
+                // 2. 모든 자식 요소에 인라인 스타일을 강제 적용합니다. (iOS Rich Text 복사 핵심)
+                const elements = tempDiv.querySelectorAll('*');
+                elements.forEach(element => {
+                    let style = '';
+                    const tag = element.tagName;
+
+                    // 기본 폰트 패밀리 강제 적용
+                    if (!element.style.fontFamily) {
+                        element.style.fontFamily = 'Inter, sans-serif';
+                    }
+
+                    // H1/H2/H3/Bold/Underline에 대한 커스텀 스타일 적용
+                    if (RICH_TEXT_STYLES[tag]) {
+                        style += RICH_TEXT_STYLES[tag];
+                    }
+                    element.style.cssText += style;
+                });
+
+                // 루트 Div에도 폰트 설정
+                tempDiv.style.fontFamily = 'Inter, sans-serif';
+
                 document.body.appendChild(tempDiv);
                 
+                // 3. 프로그램적으로 선택 및 복사 실행
                 const range = document.createRange();
                 range.selectNodeContents(tempDiv);
                 const selection = window.getSelection();
@@ -470,11 +482,12 @@
 
                 document.execCommand('copy');
                 
+                // 4. 정리
                 selection.removeAllRanges();
                 document.body.removeChild(tempDiv);
                 
                 // 성공 메시지 표시
-                messageSpan.textContent = '복사 완료! (iOS/메모장 모두 최적화됨)';
+                messageSpan.textContent = '복사 완료! (iOS/메모장 최적화)';
                 messageSpan.classList.remove('opacity-0', 'text-red-600');
                 messageSpan.classList.add('opacity-100', 'text-green-600');
 
