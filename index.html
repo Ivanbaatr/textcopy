@@ -14,7 +14,7 @@
         /* contenteditable div를 textarea처럼 보이게 스타일링 */
         #output-text {
             /* 스크롤바 추가를 위해 max-height와 overflow-y 설정 */
-            max-height: 400px; /* 최대 높이를 400px로 설정 */
+            max-height: 360px; /* 요청에 따라 최대 높이를 360px로 조정 (약 2줄 감소) */
             overflow-y: auto; /* 내용이 넘칠 때 스크롤바 표시 */
 
             min-height: 200px;
@@ -114,7 +114,7 @@
                 필기창 (여기에 텍스트를 작성하세요)
             </label>
             
-            <!-- 편집기 컨트롤: flex-wrap -> flex-nowrap overflow-x-auto 로 변경되어 한 줄 표시 및 스크롤 가능하게 함 -->
+            <!-- 편집기 컨트롤: flex-nowrap overflow-x-auto 로 한 줄 표시 및 스크롤 가능하게 함 -->
             <div class="flex flex-nowrap space-x-2 mb-2 p-2 bg-gray-100 rounded-lg shadow-inner border border-gray-200 overflow-x-auto">
                 <!-- 실행 취소 버튼 (더 큰 화살표 아이콘 사용) -->
                 <button id="undo-button" title="실행 취소" disabled
@@ -185,7 +185,7 @@
 
         <!-- 4. 버전 표시 영역 (새로 추가됨) -->
         <div class="text-right pt-2">
-            <span class="text-xs text-gray-400">v1.0.2 (Responsive Toolbar)</span>
+            <span class="text-xs text-gray-400">v1.0.3 (Max-height adjusted)</span>
         </div>
 
     </div>
