@@ -166,7 +166,7 @@
 
         <!-- 4. 버전 표시 영역 -->
         <div class="text-right pt-2">
-            <span class="text-xs text-gray-400">v1.2.0 (Initial Release - Constrained Height)</span>
+            <span class="text-xs text-gray-400">v1.2.1 (Fixed Special Spaces)</span>
         </div>
 
     </div>
@@ -198,7 +198,6 @@
         ];
 
         // iOS 서식 유지를 위한 인라인 스타일 매핑 (copyToClipboard에서 사용)
-        // **iPadOS 호환성 개선: 복잡한 border, line-height 제거 및 기본 폰트 크기/굵기/마진만 유지**
         const RICH_TEXT_STYLES = {
             // H1 (Title): 에디터 CSS와 동일한 폰트 크기 사용
             'H1': 'font-size: 1.875rem; font-weight: 800; margin: 1.5rem 0 0.75rem 0; display: block;',
@@ -360,22 +359,30 @@
             // 1. 연속된 '+' 문자 제거
             rawText = rawText.replace(/\++/g, '');
             
-            // 2. '신세계역 성경 (연구용)' 문구를 찾아 ')' 하나로 치환 및 주변 문자 정리
+            // [NEW] 2. 특수 공백 및 제로 너비 공백 정리
+            // 제로 너비 공백 (\u200b) 제거 (예: 입​으로 -> 입으로)
+            rawText = rawText.replace(/\u200b/g, ''); 
+            // 특수 공백(\u00a0: Non-breaking space, \u202f: Narrow non-breaking space)을 일반 공백으로 치환
+            rawText = rawText.replace(/[\u00a0\u202f]/g, ' '); 
+            // 다중 공백을 단일 공백으로 치환
+            rawText = rawText.replace(/\s+/g, ' '); 
+            
+            // 3. '신세계역 성경 (연구용)' 문구를 찾아 ')' 하나로 치환 및 주변 문자 정리
             const phraseToTarget = "신세계역 성경 (연구용)";
             const escapedPhrase = phraseToTarget.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             const phraseRegex = new RegExp(`[\\s\\r\\n]*${escapedPhrase}[\\s\\r\\n]*.{0,2}`, 'g');
             rawText = rawText.replace(phraseRegex, ')');
 
-            // 3. 숫자, 쉼표, 공백, 숫자 패턴에서 공백 제거 (예: 1, 000 -> 1,000)
+            // 4. 숫자, 쉼표, 공백, 숫자 패턴에서 공백 제거 (예: 1, 000 -> 1,000)
             rawText = rawText.replace(/(\d+),\s+(\d+)/g, '$1,$2');
             
             const BIBLE_BOOKS_REGEX_STRING = BIBLE_BOOKS.map(name => name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
 
-            // 4. 줄 바꿈(\n)이나 텍스트 시작(^) 바로 뒤에 성경 책 이름이 오면 그 앞에 '(' 삽입
+            // 5. 줄 바꿈(\n)이나 텍스트 시작(^) 바로 뒤에 성경 책 이름이 오면 그 앞에 '(' 삽입
             const bookStartRegex = new RegExp(`(^|\\n)(${BIBLE_BOOKS_REGEX_STRING})`, 'g');
             rawText = rawText.replace(bookStartRegex, '$1($2');
 
-            // 5. 단일 별표 문자('*') 제거 (강조된 별표(**) 보존)
+            // 6. 단일 별표 문자('*') 제거 (강조된 별표(**) 보존)
             let cleanedText = rawText.replace(/\*\*/g, '@@@BOLD_TEMP@@@');
             cleanedText = cleanedText.replace(/\*/g, '');
             rawText = cleanedText.replace(/@@@BOLD_TEMP@@@/g, '**');
